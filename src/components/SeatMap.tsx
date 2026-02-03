@@ -28,7 +28,7 @@ interface VenueData {
 
 interface SeatMapProps {
     onBack: () => void;
-    onPurchase: (seats: string[]) => void;
+    onPurchase: (seats: string[]) => void | Promise<any>;
     soldSeats: string[];
     onSelectionChange?: (seats: string[]) => void;
     adminMode?: boolean;
@@ -224,7 +224,10 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
             {adminMode && selectedSeats.length > 0 && (
                 <button
                     className="apply-changes-btn-floating pulse-button"
-                    onClick={() => onPurchase(selectedSeats)}
+                    onClick={async () => {
+                        await onPurchase(selectedSeats);
+                        setSelectedSeats([]);
+                    }}
                     style={{
                         position: 'fixed',
                         top: '40px',
@@ -363,7 +366,10 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
                     <button
                         className={adminMode ? "checkout-btn release-btn" : "checkout-btn"}
                         disabled={selectedSeats.length === 0}
-                        onClick={() => onPurchase(selectedSeats)}
+                        onClick={async () => {
+                            await onPurchase(selectedSeats);
+                            setSelectedSeats([]);
+                        }}
                     >
                         {adminMode ? "RESTAURAR ASIENTOS" : "Comprar boletos"}
                     </button>
