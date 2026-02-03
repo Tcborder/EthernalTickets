@@ -75,7 +75,7 @@ function AppContent() {
   const [showStore, setShowStore] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   // Initialize state from localStorage
-  const [user, setUser] = useState<string | null>(() => localStorage.getItem('ethernal_user'));
+  const [user, setUser] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
   const showAdminPanel = location.pathname === '/adminpanel';
@@ -194,12 +194,14 @@ function AppContent() {
   }, []);
 
   const handleLogout = () => {
+    console.log("Logging out user...");
     setUser(null);
     setIsAdmin(false);
     setEtherionBalance(0);
     setShowUserMenu(false);
     setShowUserPortal(false);
     localStorage.removeItem('token');
+    localStorage.removeItem('ethernal_user');
     localStorage.removeItem('user'); // For backward compatibility
     navigate('/');
   };
@@ -549,6 +551,8 @@ function AppContent() {
           <AuthModal
             onClose={() => setShowAuthModal(false)}
             onLogin={(userData) => {
+              console.log("Login successful, updating state:", userData);
+              localStorage.setItem('ethernal_user', userData.email);
               setUser(userData.email);
               setEtherionBalance(userData.balance);
               setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
