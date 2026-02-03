@@ -5,7 +5,7 @@ import etherionCoin from '../assets/etherion-coin.png';
 
 interface AuthModalProps {
     onClose: () => void;
-    onLogin: (email: string) => void;
+    onLogin: (userData: any) => void;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
@@ -51,7 +51,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
 
             if (isLogin) {
                 localStorage.setItem('token', data.token);
-                onLogin(data.user.email);
+                onLogin(data.user);
             } else {
                 // After register, automatically switch to login or notify
                 alert("Cuenta creada. Ahora inicia sesión.");

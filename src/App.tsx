@@ -548,8 +548,10 @@ function AppContent() {
         {showAuthModal && (
           <AuthModal
             onClose={() => setShowAuthModal(false)}
-            onLogin={(email) => {
-              setUser(email);
+            onLogin={(userData) => {
+              setUser(userData.email);
+              setEtherionBalance(userData.balance);
+              setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
               setShowAuthModal(false);
             }}
           />
