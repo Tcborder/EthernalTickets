@@ -25,6 +25,7 @@ interface AdminPanelProps {
     onAssignAdmin: (email: string) => void;
     onBack: () => void;
     adminList: string[];
+    users: any[];
     onChangePassword: (email: string, newPass: string) => void;
 }
 
@@ -38,6 +39,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onAssignAdmin,
     onBack,
     adminList,
+    users,
     onChangePassword
 }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'events' | 'settings'>('dashboard');
@@ -68,8 +70,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="value">{soldSeats.length} / 2500</div>
                 </div>
                 <div className="stat-box">
-                    <span className="label">Administradores</span>
-                    <div className="value">{adminList.length}</div>
+                    <span className="label">Usuarios</span>
+                    <div className="value">{users.length}</div>
                 </div>
             </div>
 
@@ -198,20 +200,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             <div className="content-card" style={{ marginTop: '24px' }}>
-                <h3 className="card-title">Lista de Administradores</h3>
+                <h3 className="card-title">Lista de Usuarios</h3>
                 <table className="admin-table">
                     <thead>
                         <tr>
-                            <th>Email</th>
+                            <th>Usuario / Email</th>
+                            <th>Saldo</th>
                             <th>Rango</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {adminList.map(email => (
-                            <tr key={email}>
-                                <td>{email}</td>
-                                <td><span className="status-badge status-admin">Administrador</span></td>
+                        {users.map(u => (
+                            <tr key={u.id}>
+                                <td>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ color: 'white', fontWeight: 'bold' }}>{u.username}</span>
+                                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{u.email}</span>
+                                    </div>
+                                </td>
+                                <td style={{ color: '#4ade80' }}>{formatEtherions(u.balance)}</td>
+                                <td>
+                                    {u.is_admin ?
+                                        <span className="status-badge status-admin">Administrador</span> :
+                                        <span className="status-badge status-paid">Usuario</span>
+                                    }
+                                </td>
                                 <td style={{ color: '#4ade80' }}>Activo</td>
                             </tr>
                         ))}
@@ -248,7 +262,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                         style={{ padding: '4px 8px', fontSize: '0.7rem' }}
                                         onClick={() => onResetSpecificSeats([`seat-6-row-${ticket.row}-item-${ticket.seat}`])}
                                     >
-                                        Anular
+                                        Revocar
                                     </button>
                                 </td>
                             </tr>
@@ -259,105 +273,85 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
     );
 
-    const renderEvents = () => {
-        if (eventMapTarget) {
-            return (
-                <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
-                    <SeatMap
-                        onBack={() => {
-                            setEventMapTarget(null);
-                        }}
-                        onPurchase={(seats: string[]) => {
-                            if (confirm(`¿Confirmas reactivar estos ${seats.length} asientos?`)) {
-                                onResetSpecificSeats(seats);
-                                setEventMapTarget(null);
-                            }
-                        }}
-                        soldSeats={soldSeats}
-                        adminMode={true}
-                    />
-                </div>
-            );
-        }
-
-        const mockEvents = [
-            { id: 1, title: "Tame Impala: Slow Rush Tour", location: "Auditorio Telmex, GDL", date: "Noviembre 17, 2026" },
-            { id: 2, title: "Coachella: Desert Vibes", location: "Empire Polo Club, CA", date: "Abril 14, 2026" },
-            { id: 3, title: "EMC Mexico 2026", location: "Autódromo H. Rodríguez, CDMX", date: "Febrero 27, 2026" }
-        ];
-
-        return (
-            <div className="tab-content">
-                <div className="content-card">
-                    <h3 className="card-title"><LayoutDashboard size={20} /> Gestión por Evento</h3>
-                    <div className="events-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                        {mockEvents.map(event => (
-                            <div key={event.id} className="content-card" style={{ background: '#111' }}>
-                                <h4 style={{ margin: '0 0 16px 0' }}>{event.title}</h4>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', color: '#737373', fontSize: '0.85rem' }}>
-                                    <span>Boletos Vendidos: {totalTickets.filter(t => t.event === event.title).length}</span>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <button
-                                        className="btn-gray"
-                                        style={{ width: '100%' }}
-                                        onClick={() => setEventMapTarget(event)}
-                                    >
-                                        Gestionar Mapa (Visual)
-                                    </button>
-                                    <button
-                                        className="btn-danger-outline"
-                                        style={{ width: '100%' }}
-                                        onClick={() => {
-                                            if (confirm(`¿Resetear todo el evento "${event.title}"?`)) onResetEvent(event.title);
-                                        }}
-                                    >
-                                        Resetear Todo el Evento
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const renderSettings = () => (
+    const renderEvents = () => (
         <div className="tab-content">
-            <div className="content-card">
-                <h3 className="card-title"><Settings size={20} /> Mantenimiento Específico</h3>
-                <div className="admin-form">
+            <div className="admin-grid">
+                <div className="content-card">
+                    <h3 className="card-title">Resetear Asientos</h3>
                     <div className="form-group">
-                        <label>Liberar Asientos Específicos</label>
-                        <p style={{ color: '#737373', fontSize: '0.85rem' }}>Escribe los IDs separados por comas (ej: seat-6-row-A-item-1, seat-6-row-A-item-2)</p>
-                        <input
-                            type="text"
-                            placeholder="IDs de asientos..."
+                        <label>ID de Asientos (separados por coma)</label>
+                        <textarea
+                            placeholder="seat-6-row-B-item-12, seat-6-row-A-item-5"
                             value={specificSeatsText}
                             onChange={(e) => setSpecificSeatsText(e.target.value)}
                         />
                     </div>
-                    <button className="btn-gray" onClick={() => {
-                        const ids = specificSeatsText.split(',').map(s => s.trim()).filter(s => s !== '');
-                        if (ids.length > 0) {
-                            onResetSpecificSeats(ids);
-                            setSpecificSeatsText('');
-                        }
+                    <button className="btn-danger-outline" onClick={() => {
+                        const ids = specificSeatsText.split(',').map(s => s.trim()).filter(s => s);
+                        onResetSpecificSeats(ids);
+                        setSpecificSeatsText('');
                     }}>
                         Liberar Asientos
                     </button>
+                </div>
 
-                    <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
-
-                    <div className="form-group">
-                        <label>Zona de Peligro</label>
-                        <p style={{ color: '#737373', fontSize: '0.85rem' }}>Borrado total de la base de datos.</p>
+                <div className="content-card">
+                    <h3 className="card-title">Ocupación Actual</h3>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                        {soldSeats.length === 0 ? <p>No hay asientos ocupados.</p> : (
+                            <div className="seat-summary">
+                                {soldSeats.map(id => <span key={id} className="seat-id-tag">{id}</span>)}
+                            </div>
+                        )}
                     </div>
-                    <button className="btn-danger-outline" onClick={() => {
-                        if (confirm("¿RESET TOTAL?")) onResetSeats();
+                </div>
+            </div>
+
+            <div className="content-card" style={{ marginTop: '24px' }}>
+                <h3 className="card-title">Estado de Eventos</h3>
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Evento</th>
+                            <th>Ventas</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[...new Set(totalTickets.map(t => t.event))].map(eventName => (
+                            <tr key={eventName}>
+                                <td>{eventName}</td>
+                                <td>{totalTickets.filter(t => t.event === eventName).length} boletos</td>
+                                <td>
+                                    <button className="btn-danger-outline" onClick={() => onResetEvent(eventName)}>
+                                        Limpiar Todo el Evento
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+
+    const renderSettings = () => (
+        <div className="tab-content">
+            <div className="content-card">
+                <h3 className="card-title"><Settings size={20} /> Opciones Críticas</h3>
+                <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Estas acciones borrarán datos permanentes del sistema.</p>
+
+                <div className="admin-form">
+                    <div className="form-group">
+                        <label>Limpieza General</label>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Revoca todos los boletos y libera todos los asientos del mapa.</p>
+                    </div>
+                    <button className="btn-danger" onClick={() => {
+                        if (window.confirm("¿Estás SEGURO de que quieres borrar TODOS los boletos vendiddos? Esta acción no se puede deshacer.")) {
+                            onResetSeats();
+                        }
                     }}>
-                        <RefreshCcw size={16} /> Resetear Todo el Sistema
+                        Resetear Todo el Sistema de Tickets
                     </button>
                 </div>
             </div>
@@ -365,76 +359,68 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     );
 
     return (
-        <div className="admin-layout">
-            <aside className="admin-sidebar">
-                <div className="sidebar-logo">
-                    <img src={ethernalLogo} alt="Ethernal" />
-                    <span>ADMIN</span>
+        <div className="admin-panel-overlay">
+            <div className="admin-panel-container">
+                <div className="admin-sidebar">
+                    <div className="admin-logo">
+                        <img src={ethernalLogo} alt="Ethernal" />
+                        <span>Admin</span>
+                    </div>
+
+                    <nav className="admin-nav">
+                        <button
+                            className={activeTab === 'dashboard' ? 'active' : ''}
+                            onClick={() => setActiveTab('dashboard')}
+                        >
+                            <LayoutDashboard size={20} /> Dashboard
+                        </button>
+                        <button
+                            className={activeTab === 'users' ? 'active' : ''}
+                            onClick={() => setActiveTab('users')}
+                        >
+                            <Users size={20} /> Usuarios
+                        </button>
+                        <button
+                            className={activeTab === 'tickets' ? 'active' : ''}
+                            onClick={() => setActiveTab('tickets')}
+                        >
+                            <Ticket size={20} /> Boletos
+                        </button>
+                        <button
+                            className={activeTab === 'events' ? 'active' : ''}
+                            onClick={() => setActiveTab('events')}
+                        >
+                            <RefreshCcw size={20} /> Gestión Global
+                        </button>
+                        <button
+                            className={activeTab === 'settings' ? 'active' : ''}
+                            onClick={() => setActiveTab('settings')}
+                        >
+                            <Settings size={20} /> Configuración
+                        </button>
+                    </nav>
+
+                    <button className="back-btn" onClick={onBack}>
+                        <ArrowLeft size={20} /> Volver a la Web
+                    </button>
                 </div>
 
-                <nav className="sidebar-nav">
-                    <div
-                        className={`sidebar-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('dashboard')}
-                    >
-                        <LayoutDashboard size={18} />
-                        <span>Dashboard</span>
-                    </div>
-                    <div
-                        className={`sidebar-item ${activeTab === 'users' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('users')}
-                    >
-                        <Users size={18} />
-                        <span>Usuarios & Roles</span>
-                    </div>
-                    <div
-                        className={`sidebar-item ${activeTab === 'tickets' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('tickets')}
-                    >
-                        <Ticket size={18} />
-                        <span>Base de Datos</span>
-                    </div>
-                    <div
-                        className={`sidebar-item ${activeTab === 'events' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('events')}
-                    >
-                        <LayoutDashboard size={18} />
-                        <span>Eventos</span>
-                    </div>
-                    <div
-                        className={`sidebar-item ${activeTab === 'settings' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('settings')}
-                    >
-                        <Settings size={18} />
-                        <span>Ajustes</span>
-                    </div>
-                </nav>
+                <main className="admin-main">
+                    <header className="admin-header">
+                        <h2>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Panel</h2>
+                        <div className="admin-user-info">
+                            <span>Admin Mode</span>
+                            <div className="admin-avatar">A</div>
+                        </div>
+                    </header>
 
-                <div className="sidebar-footer">
-                    <div className="sidebar-item" onClick={onBack}>
-                        <ArrowLeft size={18} />
-                        <span>Salir del Panel</span>
-                    </div>
-                </div>
-            </aside>
-
-            <main className="admin-main">
-                <header className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2>
-                        {activeTab === 'dashboard' && 'Resumen de Ventas'}
-                        {activeTab === 'users' && 'Gestión de Usuarios'}
-                        {activeTab === 'tickets' && 'Base de Datos de Boletos'}
-                        {activeTab === 'events' && (eventMapTarget ? `Gestionando: ${eventMapTarget.title}` : 'Gestión por Evento')}
-                        {activeTab === 'settings' && 'Mantenimiento Técnico'}
-                    </h2>
-                </header>
-
-                {activeTab === 'dashboard' && renderDashboard()}
-                {activeTab === 'users' && renderUsers()}
-                {activeTab === 'tickets' && renderTickets()}
-                {activeTab === 'events' && renderEvents()}
-                {activeTab === 'settings' && renderSettings()}
-            </main>
+                    {activeTab === 'dashboard' && renderDashboard()}
+                    {activeTab === 'users' && renderUsers()}
+                    {activeTab === 'tickets' && renderTickets()}
+                    {activeTab === 'events' && renderEvents()}
+                    {activeTab === 'settings' && renderSettings()}
+                </main>
+            </div>
         </div>
     );
 };

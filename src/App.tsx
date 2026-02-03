@@ -94,6 +94,7 @@ function AppContent() {
   });
 
   const [etherionBalance, setEtherionBalance] = useState(0); // Changed to state variable
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     const checkData = async () => {
@@ -141,6 +142,21 @@ function AppContent() {
         }
       } catch (err) {
         console.error("Error fetching sold seats:", err);
+      }
+
+      // 4. Fetch All Users (if Admin)
+      if (token) {
+        try {
+          const uResponse = await fetch(`${API_URL}/admin/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (uResponse.ok) {
+            const usersData = await uResponse.json();
+            setUsers(usersData);
+          }
+        } catch (err) {
+          console.error("Error fetching users list:", err);
+        }
       }
     };
 
@@ -245,6 +261,12 @@ function AppContent() {
         if (emailToUpdate === user) {
           setEtherionBalance(prev => prev + amount);
         }
+        // Refresh users list to show new balance in admin table
+        const tokenForUsers = localStorage.getItem('token');
+        const API_URL_REFR = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        fetch(`${API_URL_REFR}/admin/users`, { headers: { 'Authorization': `Bearer ${tokenForUsers}` } })
+          .then(res => res.json()).then(data => setUsers(data)).catch(console.error);
+
         alert(data.message || `¡Se han añadido ${amount} Etherions!`);
         setShowStore(false);
       } else {
@@ -256,12 +278,38 @@ function AppContent() {
     }
   };
 
-  const handleAssignAdmin = (email: string) => {
-    if (!adminList.includes(email)) {
-      setAdminList(prev => [...prev, email]);
-      alert(`El usuario ${email} ahora es administrador.`);
-    } else {
-      alert("Este usuario ya es administrador.");
+  const handleAssignAdmin = async (email: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+      const response = await fetch(`${API_URL}/admin/set-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, isAdmin: true })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        if (!adminList.includes(email)) {
+          setAdminList(prev => [...prev, email]);
+        }
+        // Refresh users list
+        const API_URL_REFR = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        fetch(`${API_URL_REFR}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } })
+          .then(res => res.json()).then(data => setUsers(data)).catch(console.error);
+
+        alert(data.message || `Rango de ${email} actualizado.`);
+      } else {
+        alert(data.error || "Error al asignar admin");
+      }
+    } catch (error) {
+      console.error("Error setting admin role:", error);
+      alert("Error de conexión");
     }
   };
 
@@ -651,6 +699,7 @@ function AppContent() {
               onAssignAdmin={handleAssignAdmin}
               onChangePassword={handleChangePassword}
               adminList={adminList}
+              users={users}
               onBack={() => {
                 navigate('/');
               }}

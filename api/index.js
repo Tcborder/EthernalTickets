@@ -252,6 +252,52 @@ app.post('/api/admin/add-balance', authenticate, async (req, res) => {
         res.status(500).json({ error: "Error al actualizar la contraseña" });
     }
 });
+app.post('/api/admin/set-admin', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const { email, isAdmin: targetIsAdmin } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: "Email es requerido" });
+        }
+
+        const result = await db.execute({
+            sql: "UPDATE users SET is_admin = ? WHERE email = ?",
+            args: [targetIsAdmin ? 1 : 0, email]
+        });
+
+        if (result.rowsAffected === 0) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        res.json({ success: true, message: `Rango de ${email} actualizado correctamente` });
+    } catch (error) {
+        console.error("Set admin error:", error);
+        res.status(500).json({ error: "Error al actualizar el rango de administrador" });
+    }
+});
+
+app.get('/api/admin/users', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const result = await db.execute("SELECT id, email, username, etherion_balance as balance, is_admin FROM users");
+
+        const users = result.rows.map(row => ({
+            ...row,
+            id: Number(row.id),
+            balance: Number(row.balance),
+            is_admin: Number(row.is_admin) === 1
+        }));
+
+        res.json(users);
+    } catch (error) {
+        console.error("List users error:", error);
+        res.status(500).json({ error: "Error al obtener lista de usuarios" });
+    }
+});
+
 app.post('/api/tickets/purchase', authenticate, async (req, res) => {
     try {
         await initDb();
