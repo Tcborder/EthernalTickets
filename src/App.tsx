@@ -195,6 +195,26 @@ function App() {
     alert("Mapa de asientos reseteado con éxito.");
   };
 
+  const handleResetSpecificSeats = (seatIds: string[]) => {
+    setGloballySoldSeats(prev => prev.filter(id => !seatIds.includes(id)));
+    // Also remove tickets associated with these seats
+    setPurchasedTickets(prev => prev.filter(ticket => {
+      const ticketSeatId = `seat-6-row-${ticket.row}-item-${ticket.seat}`;
+      return !seatIds.includes(ticketSeatId);
+    }));
+    alert(`Se han liberado ${seatIds.length} asientos.`);
+  };
+
+  const handleResetEvent = (eventName: string) => {
+    // Collect all seat IDs for this event to free them
+    const ticketsToRemove = purchasedTickets.filter(t => t.event === eventName);
+    const seatIdsToRemove = ticketsToRemove.map(t => `seat-6-row-${t.row}-item-${t.seat}`);
+
+    setGloballySoldSeats(prev => prev.filter(id => !seatIdsToRemove.includes(id)));
+    setPurchasedTickets(prev => prev.filter(t => t.event !== eventName));
+    alert(`Se ha reseteado el evento "${eventName}".`);
+  };
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -449,6 +469,8 @@ function App() {
             totalTickets={purchasedTickets}
             soldSeats={globallySoldSeats}
             onResetSeats={handleResetSeats}
+            onResetSpecificSeats={handleResetSpecificSeats}
+            onResetEvent={handleResetEvent}
             onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
             onAssignAdmin={handleAssignAdmin}
             adminList={adminList}
