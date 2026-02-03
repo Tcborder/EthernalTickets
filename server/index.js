@@ -173,6 +173,29 @@ app.get('/api/admin/users', authenticate, isAdmin, async (req, res) => {
     }
 });
 
+app.get('/api/admin/tickets', authenticate, isAdmin, async (req, res) => {
+    try {
+        const result = await turso.execute("SELECT * FROM tickets ORDER BY purchase_date DESC");
+        const tickets = result.rows.map(row => ({
+            id: `TK-${row.id}`,
+            event: row.event_title,
+            seat: row.seat_id.split('-').pop(),
+            row: row.seat_id.split('-')[3] || '?',
+            originalSeatId: row.seat_id,
+            section: 'AZU201',
+            location: 'Auditorio Telmex, GDL',
+            price: Number(row.price),
+            date: new Date(row.purchase_date).toLocaleDateString('es-MX', {
+                day: '2-digit', month: 'long', year: 'numeric'
+            })
+        }));
+        res.json(tickets);
+    } catch (error) {
+        console.error("Admin list tickets error:", error);
+        res.status(500).json({ error: "Error al obtener lista de boletos" });
+    }
+});
+
 app.post('/api/admin/add-balance', authenticate, async (req, res) => {
     try {
         let { email, amount } = req.body;
@@ -269,6 +292,19 @@ app.get('/api/tickets/sold', async (req, res) => {
         res.json(result.rows.map(row => row.seat_id));
     } catch (error) {
         res.status(500).json({ error: "Error al obtener ventas" });
+    }
+});
+
+app.get('/api/tickets/sold/:eventTitle', async (req, res) => {
+    try {
+        const { eventTitle } = req.params;
+        const result = await turso.execute({
+            sql: "SELECT seat_id FROM tickets WHERE event_title = ?",
+            args: [eventTitle]
+        });
+        res.json(result.rows.map(row => row.seat_id));
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener ventas del evento" });
     }
 });
 

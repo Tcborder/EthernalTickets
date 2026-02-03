@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './AdminPanel.css';
+import SeatMap from './SeatMap';
 import {
     LayoutDashboard,
     Users,
@@ -8,7 +9,9 @@ import {
     ArrowLeft,
     ShieldCheck,
     Coins,
-    Key
+    Key,
+    Eye,
+    Search as SearchIcon
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
 import { formatEtherions, parseAbbreviatedNumber } from '../utils/formatters';
@@ -24,6 +27,7 @@ interface AdminPanelProps {
     onBack: () => void;
     users: any[];
     onChangePassword: (email: string, newPass: string) => void;
+    events: any[];
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -36,13 +40,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onRemoveAdmin,
     onBack,
     users,
-    onChangePassword
+    onChangePassword,
+    events
 }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'settings'>('dashboard');
 
     // Form states
     const [etherionsEmail, setEtherionsEmail] = useState('');
     const [etherionsAmount, setEtherionsAmount] = useState('1000');
+    const [viewEventMap, setViewEventMap] = useState<any | null>(null);
+    const [eventSoldSeats, setEventSoldSeats] = useState<string[]>([]);
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [changePasswordEmail, setChangePasswordEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -269,43 +276,141 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
     );
 
-    const renderTickets = () => (
-        <div className="tab-content">
-            <div className="content-card">
-                <h3 className="card-title"><Ticket size={20} /> Base de Datos de Boletos</h3>
-                <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Evento</th>
-                            <th>Sección</th>
-                            <th>Asiento</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {totalTickets.map(ticket => (
-                            <tr key={ticket.id}>
-                                <td>{ticket.id}</td>
-                                <td>{ticket.event}</td>
-                                <td>{ticket.section}</td>
-                                <td>{ticket.row}-{ticket.seat}</td>
-                                <td>
-                                    <button
-                                        className="btn-danger-outline"
-                                        style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                                        onClick={() => onResetSpecificSeats([ticket.originalSeatId])}
-                                    >
-                                        Revocar
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+    const fetchEventSoldSeats = async (eventTitle: string) => {
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        try {
+            const response = await fetch(`${API_URL}/tickets/sold/${encodeURIComponent(eventTitle)}`);
+            if (response.ok) {
+                const data = await response.json();
+                setEventSoldSeats(data);
+            }
+        } catch (error) {
+            console.error("Error fetching event sold seats:", error);
+        }
+    };
+
+    const renderTickets = () => {
+        if (viewEventMap) {
+            return (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#020617' }}>
+                    <SeatMap
+                        adminMode={true}
+                        soldSeats={eventSoldSeats}
+                        onBack={() => setViewEventMap(null)}
+                        onPurchase={async (seatsToRevoke) => {
+                            if (window.confirm(`¿Estás seguro de revocar ${seatsToRevoke.length} boletos?`)) {
+                                await onResetSpecificSeats(seatsToRevoke);
+                                // Refresh sold seats for this event
+                                fetchEventSoldSeats(viewEventMap.title);
+                            }
+                        }}
+                    />
+                </div>
+            );
+        }
+
+        return (
+            <div className="tab-content">
+                <div className="content-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h3 className="card-title" style={{ margin: 0 }}><Ticket size={24} /> Gestión de Boletos por Evento</h3>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <div className="search-bar-mini" style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '8px',
+                                padding: '8px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <SearchIcon size={16} color="#94a3b8" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar evento..."
+                                    style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.9rem' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="admin-events-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        gap: '24px'
+                    }}>
+                        {events.map(event => {
+                            const eventTickets = totalTickets.filter(t => t.event === event.title);
+                            return (
+                                <div key={event.id} className="admin-event-card" style={{
+                                    background: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '16px',
+                                    overflow: 'hidden',
+                                    transition: 'transform 0.2s, border-color 0.2s',
+                                    cursor: 'default'
+                                }}>
+                                    <div style={{ height: '140px', overflow: 'hidden', position: 'relative' }}>
+                                        <img src={event.image} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            padding: '16px',
+                                            background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)'
+                                        }}>
+                                            <span style={{
+                                                fontSize: '0.7rem',
+                                                background: '#3b82f6',
+                                                color: 'white',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                fontWeight: 'bold',
+                                                textTransform: 'uppercase'
+                                            }}>{event.category}</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: '20px' }}>
+                                        <h4 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', color: 'white' }}>{event.title}</h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                                <span style={{ color: '#94a3b8' }}>Boletos Vendidos</span>
+                                                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{eventTickets.length}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                                <span style={{ color: '#94a3b8' }}>Ingresos</span>
+                                                <span style={{ color: 'white' }}>{formatEtherions(eventTickets.reduce((acc, t) => acc + (t.price || 0), 0))} E.</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="btn-gray"
+                                            style={{
+                                                width: '100%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                                padding: '12px',
+                                                borderRadius: '10px',
+                                                background: 'rgba(255,255,255,0.08)'
+                                            }}
+                                            onClick={() => {
+                                                setViewEventMap(event);
+                                                fetchEventSoldSeats(event.title);
+                                            }}
+                                        >
+                                            <Eye size={18} /> Ver Sold Tickets
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
 
 

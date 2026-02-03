@@ -139,18 +139,32 @@ function AppContent() {
         console.error("Error fetching sold seats:", err);
       }
 
-      // 4. Fetch All Users (if Admin)
+      // 4. Fetch All Users and All Tickets (if Admin)
       if (token) {
         try {
-          const uResponse = await fetch(`${API_URL}/admin/users`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (uResponse.ok) {
-            const usersData = await uResponse.json();
-            setUsers(usersData);
+          // Check if admin first (using previously set isAdmin is not reliable here as it's async)
+          const meRes = await fetch(`${API_URL}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const meData = await meRes.json();
+          const isActuallyAdmin = meData.is_admin === 1 || meData.is_admin === true;
+
+          if (isActuallyAdmin) {
+            // Fetch users
+            const uResponse = await fetch(`${API_URL}/admin/users`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (uResponse.ok) setUsers(await uResponse.json());
+
+            // Fetch ALL tickets
+            const allTResponse = await fetch(`${API_URL}/admin/tickets`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (allTResponse.ok) {
+              const allTickets = await allTResponse.json();
+              setPurchasedTickets(allTickets);
+            }
           }
         } catch (err) {
-          console.error("Error fetching users list:", err);
+          console.error("Error fetching admin data:", err);
         }
       }
     };
@@ -713,6 +727,7 @@ function AppContent() {
               onChangePassword={handleChangePassword}
 
               users={users}
+              events={events}
               onBack={() => {
                 navigate('/');
               }}
