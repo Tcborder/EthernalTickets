@@ -1,0 +1,167 @@
+.etherion-store-container {
+    padding: 80px 20px;
+    min-height: 100vh;
+    background: #171717;
+    /* Keeping the requested gray background */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    font-family: 'Inter', sans-serif;
+}
+
+.store-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.store-header h2 {
+    font-size: 2.5rem;
+    color: white;
+    margin-bottom: 8px;
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.store-header p {
+    color: #a3a3a3;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.offers-grid {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
+    max-width: 1400px;
+    width: 100%;
+}
+
+.offer-card {
+    border-radius: 12px;
+    padding: 24px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 220px;
+    position: relative;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.8), 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    border: none;
+    background: #262626;
+}
+
+
+
+.offer-card:hover {
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.bonus-tag {
+    background: white;
+    color: #0f172a;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    transform: rotate(5deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.coin-image-container {
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.coin-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
+    transition: transform 0.3s ease;
+}
+
+.offer-card:hover .coin-image {
+    transform: scale(1.1);
+}
+
+.etherion-amount {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: white;
+    text-align: center;
+    line-height: 1;
+    text-transform: uppercase;
+    font-style: italic;
+    margin-bottom: 24px;
+    text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.etherion-label {
+    font-size: 0.9rem;
+    display: block;
+    margin-top: 4px;
+    font-weight: 700;
+}
+
+.price-button {
+    margin-top: auto;
+    width: 100%;
+    padding: 12px;
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.price-button:hover {
+    background: #e5e5e5;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+}
+
+.price-button:active {
+    transform: translateY(0);
+}
+
+.back-store-btn {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-style: italic;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.back-store-btn:hover {
+    opacity: 1;
+}

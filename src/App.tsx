@@ -1,0 +1,493 @@
+import { useState, useEffect } from 'react';
+import { Calendar, MapPin, Ticket, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import SeatMap from './components/SeatMap';
+import EtherionStore from './components/EtherionStore';
+import AuthModal from './components/AuthModal';
+import ethernalLogo from './assets/Images/logoethernal.png';
+import coinImage from './assets/etherion-coin.png';
+import './App.css';
+
+interface Event {
+  id: number;
+  title: string;
+  category: string;
+  date: string;
+  location: string;
+  price: string;
+  image: string;
+}
+
+const events: Event[] = [
+  {
+    id: 1,
+    title: "Tame Impala: Slow Rush Tour",
+    category: "Concert",
+    date: "Noviembre 17, 2026",
+    location: "Auditorio Telmex, GDL",
+    price: "$1,388.75",
+    image: "/events/tame-impala.png",
+  },
+  {
+    id: 2,
+    title: "Coachella: Desert Vibes",
+    category: "Festival",
+    date: "Abril 14, 2026",
+    location: "Empire Polo Club, CA",
+    price: "$5,400.00",
+    image: "/events/coachella.png",
+  },
+  {
+    id: 3,
+    title: "EMC Mexico 2026",
+    category: "Festival",
+    date: "Febrero 27, 2026",
+    location: "Autódromo H. Rodríguez, CDMX",
+    price: "$3,200.00",
+    image: "/events/emc.png",
+  }
+];
+
+function App() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const categories = ["All", "Concert"];
+
+  const filteredEvents = events.filter(event =>
+    (selectedCategory === "All" || event.category === selectedCategory)
+  );
+
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showStore, setShowStore] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState<string | null>(null);
+
+  // Scroll to top when an event is selected
+  useEffect(() => {
+    if (selectedEvent) {
+      window.scrollTo(0, 0);
+      setShowStore(false); // Close store if event is selected from somewhere else
+    }
+  }, [selectedEvent]);
+
+  const handleBuyEtherions = (amount: number) => {
+    alert(`¡Has comprado ${amount} Etherions!`);
+    // Here you would integrate with payment gateway
+    setShowStore(false);
+  };
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [viewDate, setViewDate] = useState(new Date(2026, 1)); // Start at Feb 2026
+
+  const nextMonth = () => {
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+  };
+
+  const prevMonth = () => {
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+  };
+
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const renderCalendarGrid = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const daysInMonth = getDaysInMonth(year, month);
+    const startDay = getFirstDayOfMonth(year, month);
+    const days = [];
+
+    // Empty cells for start padding
+    for (let i = 0; i < startDay; i++) {
+      days.push(<div key={`empty-${i}`} className="calendar-day" style={{ opacity: 0 }}></div>);
+    }
+
+    // Days
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(
+        <div
+          key={i}
+          className={getDayClass(i, month, year)}
+          onClick={() => handleDateClick(i, month, year)}
+        >
+          {i}
+        </div>
+      );
+    }
+
+    return days;
+  };
+
+  const monthNames = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+  const handleDateClick = (day: number, month: number, year: number) => {
+    const clickedDate = new Date(year, month, day);
+
+    if (!startDate || (startDate && endDate)) {
+      setStartDate(clickedDate);
+      setEndDate(null);
+    } else {
+      if (clickedDate < startDate) {
+        setStartDate(clickedDate);
+      } else {
+        setEndDate(clickedDate);
+      }
+    }
+  };
+
+  const isSelected = (day: number, month: number, year: number) => {
+    if (!startDate) return false;
+    const current = new Date(year, month, day);
+    return current.getTime() === startDate.getTime() || (endDate && current.getTime() === endDate.getTime());
+  };
+
+  const isInRange = (day: number, month: number, year: number) => {
+    if (!startDate || !endDate) return false;
+    const current = new Date(year, month, day);
+    return current > startDate && current < endDate;
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return '';
+    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+  };
+
+  const getDayClass = (day: number, month: number, year: number) => {
+    let classes = 'calendar-day';
+    const current = new Date(year, month, day);
+
+    if (startDate && current.getTime() === startDate.getTime()) {
+      classes += ' selected start-date';
+    } else if (endDate && current.getTime() === endDate.getTime()) {
+      classes += ' selected end-date';
+    } else if (startDate && endDate && current > startDate && current < endDate) {
+      classes += ' in-range';
+    }
+
+    return classes;
+  };
+
+  return (
+    <div className="app-container">
+      <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="header-container">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <a href="#home" className="logo" onClick={() => setSelectedEvent(null)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src={ethernalLogo} alt="Ethernal" style={{ height: '32px', width: 'auto' }} />
+              <span style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#ffffff' }}>Tickets</span>
+            </a>
+
+            <nav className="nav-new">
+              {["Conciertos y Festivales", "Teatro y Cultura", "Deportes", "Familiares", "Especiales", "Ciudades"].map((item) => (
+                <a href="#" key={item} className="nav-link-new" onClick={(e) => e.preventDefault()}>
+                  {item}
+                </a>
+              ))}
+            </nav>
+          </div>
+
+          <div className="header-actions" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+            <div
+              className="nav-link-new"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '20px', border: '1px solid rgba(74, 222, 128, 0.2)' }}
+              onClick={() => { setShowStore(true); setSelectedEvent(null); }}
+            >
+              <img src={coinImage} alt="Etherion" style={{ width: '24px', height: '24px' }} />
+              <span style={{ color: '#4ade80', fontWeight: '600' }}>0 Etherions</span>
+            </div>
+            <div
+              className="nav-link-new"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              onClick={() => user ? null : setShowAuthModal(true)}
+            >
+              <User size={20} />
+              <span>{user ? user.split('@')[0] : "Mi Cuenta"}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        {showStore ? (
+          <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
+        ) : selectedEvent ? (
+          <section className="section" style={{ paddingTop: '80px', minHeight: '100vh', maxWidth: '100%', padding: '0' }}>
+            <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
+              <SeatMap onBack={() => setSelectedEvent(null)} selectedEvent={selectedEvent} />
+            </div>
+          </section>
+        ) : (
+          <>
+            <section className="hero" id="home" style={{
+              background: 'linear-gradient(to bottom, #020617, #0f172a)',
+              height: '60vh',
+              minHeight: '400px'
+            }}>
+              <div className="hero-content" style={{ width: '100%', maxWidth: '1000px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px' }}>
+
+                <h1 className="hero-title" style={{ fontSize: '3rem', textAlign: 'center' }}>
+                  <span className="gradient-text">Encuentra tu próxima experiencia</span>
+                </h1>
+
+                <div className="tm-search-bar" style={{
+                  display: 'flex',
+                  background: 'white',
+                  borderRadius: '8px',
+                  width: '100%',
+                  height: '80px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                  position: 'relative'
+                }}>
+                  {/* Location Segment */}
+                  <div className="search-segment" style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 20px', borderRight: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                    <MapPin color="#334155" size={20} style={{ marginRight: '12px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', letterSpacing: '0.5px' }}>UBICACIÓN</span>
+                      <span style={{ color: '#1e293b', fontWeight: '600' }}>Todo México</span>
+                    </div>
+                    <ChevronDown color="#94a3b8" size={16} />
+                  </div>
+
+                  {/* Date Segment */}
+                  <div
+                    className="search-segment"
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 20px', borderRight: '1px solid #e2e8f0', cursor: 'pointer', position: 'relative' }}
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                  >
+                    <Calendar color="#334155" size={20} style={{ marginRight: '12px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', letterSpacing: '0.5px' }}>FECHAS</span>
+                      <span style={{ color: '#1e293b', fontWeight: '600' }}>Todas las fechas</span>
+                    </div>
+                    <ChevronDown color="#94a3b8" size={16} />
+
+                    {/* Date Picker Modal */}
+                    {showDatePicker && (
+                      <div className="date-picker-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="date-inputs-row">
+                          <div className="date-input-group">
+                            <label>Fecha de inicio</label>
+                            <input type="text" placeholder="DD/MM/AAAA" value={formatDate(startDate)} readOnly />
+                          </div>
+                          <div className="date-input-group">
+                            <label>Fecha final</label>
+                            <input type="text" placeholder="DD/MM/AAAA" value={formatDate(endDate)} readOnly />
+                          </div>
+                        </div>
+
+                        <div className="calendars-container">
+                          {/* Left Calendar */}
+                          <div className="calendar">
+                            <div className="calendar-header">
+                              <ArrowLeft size={16} color="#64748b" style={{ cursor: 'pointer' }} onClick={prevMonth} />
+                              <span>{`${monthNames[viewDate.getMonth()]} ${viewDate.getFullYear()}`}</span>
+                            </div>
+                            <div className="calendar-grid">
+                              {['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'].map(d => (
+                                <div key={d} className="calendar-day-label">{d}</div>
+                              ))}
+                              {renderCalendarGrid(viewDate)}
+                            </div>
+                          </div>
+
+                          {/* Right Calendar */}
+                          <div className="calendar">
+                            <div className="calendar-header">
+                              {(() => {
+                                const nextViewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+                                return (
+                                  <>
+                                    <span>{`${monthNames[nextViewDate.getMonth()]} ${nextViewDate.getFullYear()}`}</span>
+                                    <ArrowRight size={16} color="#64748b" style={{ cursor: 'pointer' }} onClick={nextMonth} />
+                                  </>
+                                );
+                              })()}
+                            </div>
+                            <div className="calendar-grid">
+                              {['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'].map(d => (
+                                <div key={d} className="calendar-day-label">{d}</div>
+                              ))}
+                              {renderCalendarGrid(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="modal-footer">
+                          <button className="btn-text" onClick={() => { setStartDate(null); setEndDate(null); }}>Reiniciar</button>
+                          <div>
+                            <button className="btn-outline" onClick={() => setShowDatePicker(false)}>Cancelar</button>
+                            <button className="btn-fill" onClick={() => setShowDatePicker(false)}>Aplicar</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Search Input Segment */}
+                  <div className="search-segment main-input" style={{ flex: 2, display: 'flex', alignItems: 'center', padding: '0 8px 0 20px' }}>
+                    <Search color="#334155" size={20} style={{ marginRight: '12px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '12px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', letterSpacing: '0.5px' }}>BUSCAR</span>
+                      <input
+                        type="text"
+                        placeholder="Artista, evento o inmueble"
+                        style={{
+                          border: 'none',
+                          outline: 'none',
+                          fontSize: '1rem',
+                          fontWeight: '500',
+                          color: '#1e293b',
+                          width: '100%',
+                          padding: 0
+                        }}
+                      />
+                    </div>
+                    <button style={{
+                      background: '#334155',
+                      color: 'white',
+                      border: 'none',
+                      padding: '12px 24px',
+                      borderRadius: '6px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      height: '48px'
+                    }}>
+                      Buscar
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <section className="section" id="events">
+              <div className="cards-grid">
+                <AnimatePresence mode='popLayout'>
+                  {filteredEvents.map((event, index) => (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      key={event.id}
+                      className="event-card"
+                    >
+                      <img src={event.image} alt={event.title} className="event-image" />
+                      <div className="event-content">
+                        <span className="event-tag">{event.category}</span>
+                        <h3 className="event-title">{event.title}</h3>
+                        <div className="event-details">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Calendar size={14} />
+                            <span>{event.date}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <MapPin size={14} />
+                            <span>{event.location}</span>
+                          </div>
+                        </div>
+                        <div className="event-footer" style={{
+                          flexDirection: 'column',
+                          gap: '0.8rem',
+                          alignItems: 'stretch',
+                          paddingTop: '1rem',
+                          marginTop: 'auto'
+                        }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{
+                              padding: '0.8rem',
+                              width: '100%',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em'
+                            }}
+                            onClick={() => setSelectedEvent(event)}
+                          >
+                            Detalles
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </section>
+
+            <section className="section" id="about" style={{ background: 'var(--color-bg-secondary)' }}>
+              <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+                <h2 className="section-title">Sobre <span className="gradient-text">Nosotros</span></h2>
+                <p className="hero-subtitle" style={{ fontSize: '1.1rem' }}>
+                  Somos la plataforma líder en venta de tickets para eventos exclusivos.
+                  Con un enfoque en la tecnología y la experiencia del usuario,
+                  conectamos a las personas con sus pasiones.
+                </p>
+              </div>
+            </section>
+          </>
+        )}
+      </main>
+
+      <footer className="footer" id="contact">
+        <div className="footer-content">
+          <div className="footer-section">
+            <h3 className="gradient-text">Ethernal Tickets</h3>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: '1.8' }}>
+              Estudio de desarrollo y plataforma de tickets especializada en conciertos dentro de Minecraft.
+              Creando experiencias musicales inolvidables.
+            </p>
+          </div>
+          <div className="footer-section">
+            <h3>Empresa</h3>
+            <ul className="footer-links">
+              <li><a href="#events" className="footer-link">Eventos</a></li>
+              <li><a href="#about" className="footer-link">Portafolio</a></li>
+              <li><a href="#contact" className="footer-link">Contacto</a></li>
+            </ul>
+          </div>
+          <div className="footer-section">
+            <h3>Comunidad</h3>
+            <ul className="footer-links">
+              <li><a href="#" className="footer-link">Discord</a></li>
+              <li><a href="#" className="footer-link">Twitter</a></li>
+            </ul>
+          </div>
+          <div className="footer-section">
+            <h3>Legal</h3>
+            <ul className="footer-links">
+              <li><a href="#" className="footer-link">Privacidad</a></li>
+              <li><a href="#" className="footer-link">Términos</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>© 2026 Ethernal Tickets®. Todos los derechos reservados.</p>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            {/* Using text for social links as icons replacement if needed, but Lucide works */}
+            <Globe size={18} />
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default App;

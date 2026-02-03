@@ -1,0 +1,505 @@
+.seat-map-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #0f172a;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+}
+
+.seat-map-view {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #1a1a1a;
+}
+
+.seat-map-view:active {
+    cursor: grabbing;
+}
+
+.seat-map-svg {
+    transform-origin: center;
+    transition: transform 0.1s ease-out;
+    will-change: transform;
+}
+
+.seat-map-view>div {
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* Styles placed on SVG elements via JS */
+/* Identificar asientos automáticamente por el tipo de bloque o clase en el SVG */
+rect[data-type*="purple_wool"],
+rect.seat,
+rect.purple_wool,
+rect.interactive {
+    cursor: pointer;
+    pointer-events: all !important;
+    transition: opacity 0.2s ease, stroke 0.2s ease;
+}
+
+rect[data-type*="purple_wool"]:hover,
+rect.seat:hover,
+rect.purple_wool:hover {
+    opacity: 0.8;
+    stroke: #ffffff !important;
+    stroke-width: 0.1px;
+}
+
+/* El cuadro de selección verde (más refinado) */
+rect.selected {
+    fill: #4ade80 !important;
+    stroke: #ffffff !important;
+    stroke-width: 0.1px;
+    transform: scale(0.85) !important;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+/* Loading state */
+.seat-map-loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: white;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: #a855f7;
+    /* Purple */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.seat-map-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    /* Moved to left */
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+}
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Panel Container */
+.seat-info-panel {
+    position: relative;
+    width: 480px;
+    height: 100%;
+    background: #171717;
+    /* Neutral Dark Gray */
+    border-left: 1px solid #404040;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 10;
+    font-family: 'Inter', sans-serif;
+    color: #f5f5f5;
+    /* Light text */
+    border-radius: 0;
+}
+
+
+
+/* Header */
+/* Header */
+.panel-header {
+    padding: 100px 24px 24px;
+    border-bottom: 1px solid #404040;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 4px;
+}
+
+.back-btn:hover {
+    color: white;
+}
+
+/* List */
+.selected-seats-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.empty-hint {
+    font-size: 0.8rem;
+    margin-top: 8px;
+    opacity: 0.7;
+}
+
+/* Ticket Card */
+.ticket-card {
+    background: #262626;
+    /* Dark Card Background */
+    color: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    border: 1px solid #404040;
+}
+
+.ticket-header {
+    background: #404040;
+    /* Neutral Header */
+    color: #e5e5e5;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    justify-content: flex-end;
+    /* Logo/Text to right */
+    letter-spacing: 0.5px;
+}
+
+.ticket-body {
+    padding: 12px;
+}
+
+.ticket-info-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.ticket-info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.ticket-info-item .label {
+    font-size: 0.65rem;
+    color: #a3a3a3;
+    /* Light Gray Label */
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.ticket-info-item .value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    /* White Value */
+}
+
+.ticket-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #404040;
+    padding-top: 8px;
+}
+
+.price {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #cbd5e1;
+    /* Light Price */
+}
+
+.delete-btn {
+    background: none;
+    border: 1px solid #525252;
+    color: #a3a3a3;
+    padding: 6px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.delete-btn:hover {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border-color: #ef4444;
+}
+
+/* Footer */
+/* Footer */
+.panel-footer {
+    padding: 16px;
+    /* Reduced padding */
+    background: #0a0a0a;
+    /* Neutral Darkest Gray */
+    border-top: 1px solid #404040;
+}
+
+.total-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    /* Reduced margin */
+}
+
+.ticket-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: #94a3b8;
+}
+
+.total-price {
+    font-size: 1.5rem;
+    /* Reduced font size */
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.checkout-btn {
+    width: 100%;
+    padding: 12px;
+    /* Reduced padding */
+    background: #334155;
+    /* Slate Gray - Fits the dark theme */
+    border: none;
+    border-radius: 8px;
+    color: #f8fafc;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.checkout-btn:hover {
+    background: #475569;
+    /* Lighter Slate */
+}
+
+
+/* Date Picker Modal */
+.date-picker-modal {
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    padding: 24px;
+    width: 650px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.date-inputs-row {
+    display: flex;
+    gap: 16px;
+}
+
+.date-input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.date-input-group label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.date-input-group input {
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #334155;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.date-input-group input:focus {
+    border-color: #3b82f6;
+}
+
+.calendars-container {
+    display: flex;
+    gap: 32px;
+}
+
+.calendar {
+    flex: 1;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: capitalize;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+}
+
+.calendar-day-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.calendar-day {
+    font-size: 0.85rem;
+    padding: 8px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    color: #334155;
+}
+
+.calendar-day:hover {
+    background-color: #f1f5f9;
+}
+
+.calendar-day.selected {
+    background-color: #2563eb;
+    color: white;
+    font-weight: 600;
+    border-radius: 0;
+}
+
+.calendar-day.start-date {
+    border-top-left-radius: 50%;
+    border-bottom-left-radius: 50%;
+}
+
+.calendar-day.end-date {
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+}
+
+.calendar-day.in-range {
+    background-color: #eff6ff;
+    color: #1e293b;
+    border-radius: 0;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.btn-text:hover {
+    background-color: #eff6ff;
+}
+
+.btn-outline {
+    background: white;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    font-weight: 600;
+    padding: 8px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.btn-fill {
+    background: #2563eb;
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 8px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-fill:hover {
+    background: #1d4ed8;
+}
