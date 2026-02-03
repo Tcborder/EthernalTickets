@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft, LogOut, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft, LogOut, Ticket, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SeatMap from './components/SeatMap';
 import EtherionStore from './components/EtherionStore';
 import AuthModal from './components/AuthModal';
 import UserPortal from './components/UserPortal';
+import AdminPanel from './components/AdminPanel';
 import ethernalLogo from './assets/Images/logoethernal.png';
 import coinImage from './assets/etherion-coin.png';
 import './App.css';
@@ -74,6 +75,8 @@ function App() {
   const [user, setUser] = useState<string | null>(() => localStorage.getItem('ethernal_user'));
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const isAdmin = user === 'admin@ethernal.com'; // Admin definition
   const [etherionBalance, setEtherionBalance] = useState<number>(() => {
     const saved = localStorage.getItem('ethernal_balance');
     return saved ? parseInt(saved, 10) : 1250;
@@ -158,6 +161,14 @@ function App() {
     setSelectedEvent(null);
     setShowUserPortal(true);
     alert("¡Compra realizada con éxito! Revisa tus boletos en el portal.");
+  };
+
+  const handleResetSeats = () => {
+    setGloballySoldSeats([]);
+    setPurchasedTickets([]);
+    localStorage.removeItem('ethernal_sold_seats');
+    localStorage.removeItem('ethernal_tickets');
+    alert("Mapa de asientos reseteado con éxito.");
   };
 
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -250,7 +261,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
+      <header className={`header ${isScrolled ? 'scrolled' : ''}`} style={{ display: showAdminPanel ? 'none' : 'block' }}>
         <div className="header-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <a href="#home" className="logo" onClick={() => { setSelectedEvent(null); setShowStore(false); setShowUserPortal(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -331,6 +342,39 @@ function App() {
                     <Ticket size={16} />
                     Mis Boletos
                   </button>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAdminPanel(true);
+                        setShowUserMenu(false);
+                        setSelectedEvent(null);
+                        setShowStore(false);
+                        setShowUserPortal(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#4ade80',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        width: '100%',
+                        textAlign: 'left',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(74, 222, 128, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <LayoutDashboard size={16} />
+                      Panel Admin
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -376,7 +420,14 @@ function App() {
             }}
           />
         )}
-        {showUserPortal && user ? (
+        {showAdminPanel && isAdmin ? (
+          <AdminPanel
+            totalTickets={purchasedTickets}
+            soldSeats={globallySoldSeats}
+            onResetSeats={handleResetSeats}
+            onBack={() => setShowAdminPanel(false)}
+          />
+        ) : showUserPortal && user ? (
           <UserPortal user={user} tickets={purchasedTickets} balance={etherionBalance} onBack={() => setShowUserPortal(false)} />
         ) : showStore ? (
           <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
