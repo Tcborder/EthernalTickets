@@ -6,10 +6,11 @@ interface AdminPanelProps {
     totalTickets: any[];
     soldSeats: string[];
     onResetSeats: () => void;
+    onAddEtherions: (amount: number) => void;
     onBack: () => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ totalTickets, soldSeats, onResetSeats, onBack }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ totalTickets, soldSeats, onResetSeats, onAddEtherions, onBack }) => {
     return (
         <div className="admin-panel-container">
             <div className="admin-content">
@@ -58,6 +59,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ totalTickets, soldSeats, onRese
                             }}>
                                 <RefreshCcw size={16} style={{ marginRight: '8px' }} />
                                 Resetear Mapa de Asientos
+                            </button>
+                            <button className="btn-admin btn-admin-primary" onClick={() => onAddEtherions(1000)}>
+                                <RefreshCcw size={16} style={{ marginRight: '8px' }} />
+                                Añadir 1,000 Etherions (Test)
                             </button>
                             <button className="btn-admin btn-admin-primary">
                                 <Users size={16} style={{ marginRight: '8px' }} />

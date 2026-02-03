@@ -425,6 +425,7 @@ function App() {
             totalTickets={purchasedTickets}
             soldSeats={globallySoldSeats}
             onResetSeats={handleResetSeats}
+            onAddEtherions={handleBuyEtherions}
             onBack={() => setShowAdminPanel(false)}
           />
         ) : showUserPortal && user ? (
