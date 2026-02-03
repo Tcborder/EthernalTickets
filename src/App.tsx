@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Ticket, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SeatMap from './components/SeatMap';
 import EtherionStore from './components/EtherionStore';
@@ -50,7 +50,7 @@ const events: Event[] = [
 
 function App() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory] = useState("All");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,7 +60,7 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const categories = ["All", "Concert"];
+
 
   const filteredEvents = events.filter(event =>
     (selectedCategory === "All" || event.category === selectedCategory)
@@ -151,17 +151,7 @@ function App() {
     }
   };
 
-  const isSelected = (day: number, month: number, year: number) => {
-    if (!startDate) return false;
-    const current = new Date(year, month, day);
-    return current.getTime() === startDate.getTime() || (endDate && current.getTime() === endDate.getTime());
-  };
 
-  const isInRange = (day: number, month: number, year: number) => {
-    if (!startDate || !endDate) return false;
-    const current = new Date(year, month, day);
-    return current > startDate && current < endDate;
-  };
 
   const formatDate = (date: Date | null) => {
     if (!date) return '';
@@ -224,6 +214,15 @@ function App() {
       </header>
 
       <main>
+        {showAuthModal && (
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onLogin={(email) => {
+              setUser(email);
+              setShowAuthModal(false);
+            }}
+          />
+        )}
         {showStore ? (
           <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
         ) : selectedEvent ? (
