@@ -1,10 +1,23 @@
-.admin-layout {
+/* Full Screen Overlay */
+.admin-panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #0c0c0c;
+    z-index: 9999;
+    overflow: hidden;
+    /* Prevent body scroll bleed */
+}
+
+/* Main Container Flex Layout */
+.admin-panel-container {
     display: flex;
     width: 100%;
-    min-height: 100vh;
-    background-color: #0c0c0c;
-    color: #e5e5e5;
+    height: 100%;
     font-family: 'Inter', sans-serif;
+    color: #e5e5e5;
 }
 
 /* Sidebar */
@@ -15,28 +28,28 @@
     display: flex;
     flex-direction: column;
     padding: 24px 0;
-    position: fixed;
-    height: 100vh;
+    flex-shrink: 0;
+    /* Prevent sidebar shrinking */
 }
 
-.sidebar-logo {
+.admin-logo {
     padding: 0 24px 32px;
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.sidebar-logo img {
+.admin-logo img {
     height: 24px;
 }
 
-.sidebar-logo span {
+.admin-logo span {
     font-weight: 900;
     font-size: 1.2rem;
     letter-spacing: -0.5px;
 }
 
-.sidebar-nav {
+.admin-nav {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -44,40 +57,62 @@
     padding: 0 12px;
 }
 
-.sidebar-item {
+.admin-nav button {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
     border-radius: 8px;
     color: #a3a3a3;
+    background: transparent;
+    border: none;
     text-decoration: none;
     cursor: pointer;
     transition: all 0.2s;
     font-size: 0.9rem;
     font-weight: 500;
+    width: 100%;
+    text-align: left;
 }
 
-.sidebar-item:hover {
+.admin-nav button:hover {
     background-color: #262626;
     color: white;
 }
 
-.sidebar-item.active {
+.admin-nav button.active {
     background-color: #262626;
     color: white;
 }
 
-.sidebar-footer {
-    padding: 24px;
-    border-top: 1px solid #262626;
+.back-btn {
+    margin: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #262626;
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
 }
 
-/* Main Content */
+.back-btn:hover {
+    background: #404040;
+}
+
+/* Main Content Area */
 .admin-main {
     flex: 1;
-    margin-left: 260px;
+    background-color: #0c0c0c;
     padding: 40px;
+    overflow-y: auto;
+    /* Allow scrolling within main content */
+    height: 100%;
 }
 
 .admin-header {
@@ -91,6 +126,25 @@
     font-size: 2rem;
     font-weight: 800;
     margin: 0;
+    color: white;
+}
+
+.admin-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
 }
 
 /* Dashboard Grid */
@@ -123,12 +177,13 @@
     color: white;
 }
 
-/* Tables & Forms */
+/* Content Cards & Forms */
 .content-card {
     background: #171717;
     border: 1px solid #262626;
     border-radius: 12px;
     padding: 24px;
+    margin-bottom: 24px;
 }
 
 .card-title {
@@ -138,6 +193,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    color: white;
+    margin-top: 0;
 }
 
 .admin-form {
@@ -158,16 +215,19 @@
     color: #a3a3a3;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
     background: #0a0a0a;
     border: 1px solid #262626;
     padding: 12px;
     border-radius: 8px;
     color: white;
     outline: none;
+    font-family: inherit;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group textarea:focus {
     border-color: #525252;
 }
 
@@ -180,6 +240,7 @@
     font-weight: 700;
     cursor: pointer;
     transition: background 0.2s;
+    width: fit-content;
 }
 
 .btn-gray:hover {
@@ -190,10 +251,11 @@
     background: transparent;
     color: #ef4444;
     border: 1px solid rgba(239, 68, 68, 0.2);
-    padding: 12px 24px;
+    padding: 8px 16px;
     border-radius: 8px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
+    transition: 0.2s;
 }
 
 .btn-danger-outline:hover {
@@ -201,6 +263,22 @@
     color: white;
 }
 
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Tables */
 .admin-table {
     width: 100%;
     border-collapse: collapse;
@@ -218,6 +296,7 @@
 .admin-table td {
     padding: 16px;
     border-bottom: 1px solid #1a1a1a;
+    color: #d4d4d4;
 }
 
 .status-badge {
@@ -225,6 +304,7 @@
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 700;
+    display: inline-block;
 }
 
 .status-paid {
@@ -237,17 +317,42 @@
     color: white;
 }
 
+.seat-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.seat-id-tag {
+    background: #262626;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #a3a3a3;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 24px;
+}
+
 @media (max-width: 1024px) {
     .admin-sidebar {
         width: 80px;
     }
 
-    .sidebar-logo span,
-    .sidebar-item span {
-        display: none;
+    .admin-logo span,
+    .admin-nav button span {
+        display: none; // Assuming there is text inside a span, if closely following structure
     }
 
-    .admin-main {
-        margin-left: 80px;
+    .admin-nav button {
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .back-btn span {
+        display: none;
     }
 }
