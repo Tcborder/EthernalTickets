@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket, ArrowLeft, RefreshCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket, ArrowLeft, RefreshCcw, ShieldCheck } from 'lucide-react';
 import './SeatMap.css';
 import coinImage from '../assets/etherion-coin.png';
 
@@ -274,6 +274,23 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
 
     return (
         <div className="seat-map-container" ref={containerRef}>
+            {adminMode && (
+                <div className="admin-map-floating-header">
+                    <div className="admin-status-pill">
+                        <ShieldCheck size={16} />
+                        MODO ADMINISTRADOR - Selecciona asientos grises para liberar
+                    </div>
+                    {selectedSeats.length > 0 && (
+                        <button
+                            className="apply-changes-btn-floating"
+                            onClick={() => onPurchase(selectedSeats)}
+                        >
+                            <RefreshCcw size={18} />
+                            APLICAR CAMBIOS ({selectedSeats.length})
+                        </button>
+                    )}
+                </div>
+            )}
             <div
                 ref={viewRef}
                 className="seat-map-view"
@@ -371,34 +388,10 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
 
             <div className="seat-info-panel">
                 <div className="seat-map-header">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '15px' }}>
-                        <button className="back-btn" onClick={onBack}>
-                            <ArrowLeft size={20} />
-                            {adminMode ? "Volver a Gestión" : "Cambiar Evento"}
-                        </button>
-                        {adminMode && selectedSeats.length > 0 && (
-                            <button
-                                className="release-btn-top"
-                                onClick={() => onPurchase(selectedSeats)}
-                                style={{
-                                    background: '#ef4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)'
-                                }}
-                            >
-                                <RefreshCcw size={16} />
-                                Aplicar Cambios ({selectedSeats.length})
-                            </button>
-                        )}
-                    </div>
+                    <button className="back-btn" onClick={onBack}>
+                        <ArrowLeft size={20} />
+                        {adminMode ? "Volver a Gestión" : "Cambiar Evento"}
+                    </button>
                     <div className="event-info-map">
                         <h2>{selectedEvent.title} {adminMode && <span className="admin-badge">ADMIN MAP</span>}</h2>
                         <p>{selectedEvent.location} • {selectedEvent.date}</p>
