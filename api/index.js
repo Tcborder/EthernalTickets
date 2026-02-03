@@ -171,11 +171,13 @@ const isAdmin = (req, res, next) => {
     }
 };
 
+const MAX_SAFE_ETHERIONS = 1000000000000000; // 1 Billón (Quadrillion in US) - Safe for JS
+
 app.post('/api/admin/add-balance', authenticate, async (req, res) => {
     try {
         await initDb();
         const db = getTurso();
-        const { email, amount } = req.body;
+        let { email, amount } = req.body;
 
         if (!email || amount === undefined) {
             return res.status(400).json({ error: "Email y cantidad son requeridos" });
@@ -189,19 +191,29 @@ app.post('/api/admin/add-balance', authenticate, async (req, res) => {
             return res.status(403).json({ error: "No tienes permisos para realizar esta acción" });
         }
 
-        const result = await db.execute({
-            sql: "UPDATE users SET etherion_balance = etherion_balance + ? WHERE email = ?",
-            args: [amount, email]
+        // Get current balance to check for overflow
+        const userRes = await db.execute({
+            sql: "SELECT etherion_balance FROM users WHERE email = ?",
+            args: [email]
         });
 
-        if (result.rowsAffected === 0) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
-        }
+        if (userRes.rows.length === 0) return res.status(404).json({ error: "Usuario no encontrado" });
 
-        res.json({ success: true, message: `Se han añadido ${amount} Etherions a ${email}` });
+        const currentBalance = Number(userRes.rows[0].etherion_balance);
+        let newBalance = currentBalance + Number(amount);
+
+        if (newBalance > MAX_SAFE_ETHERIONS) newBalance = MAX_SAFE_ETHERIONS;
+        if (newBalance < 0) newBalance = 0;
+
+        await db.execute({
+            sql: "UPDATE users SET etherion_balance = ? WHERE email = ?",
+            args: [newBalance, email]
+        });
+
+        res.json({ success: true, message: `Saldo actualizado. Nuevo balance: ${newBalance.toLocaleString()}` });
     } catch (error) {
         console.error("Balance update error:", error);
-        res.status(500).json({ error: "Error al procesar la recarga" });
+        res.status(500).json({ error: "Error de precisión: El número es demasiado grande" });
     }
 });
 
