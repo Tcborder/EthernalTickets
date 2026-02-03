@@ -96,10 +96,19 @@ rect.purple_wool:hover {
     fill: #475569 !important;
     /* Muted gray */
     opacity: 0.6;
-    cursor: not-allowed !important;
+    cursor: pointer !important;
+    /* Changed from not-allowed to allow admin interaction */
     filter: none !important;
-    pointer-events: none;
-    /* Block all interactions */
+}
+
+.seat-map-svg-content .admin-selected {
+    fill: #3b82f6 !important;
+    /* Target blue color */
+    stroke: #4ade80 !important;
+    /* Selection green highlight */
+    stroke-width: 0.4px !important;
+    opacity: 1 !important;
+    vector-effect: non-scaling-stroke;
 }
 
 /* El cuadro de selección verde (más refinado) */

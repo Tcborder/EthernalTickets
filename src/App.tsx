@@ -186,9 +186,10 @@ function App() {
       date: selectedEvent?.date || '',
       location: selectedEvent?.location || '',
       image: selectedEvent?.image || '',
+      originalSeatId: id, // Store full ID for reliable deletion/sync
       section: 'AZU201', // Mocked section
-      row: id.split('-')[3], // The row letter (e.g., 'B')
-      seat: id.split('-')[5]  // The seat number (e.g., '12')
+      row: id.split('-')[3],
+      seat: id.split('-')[5]
     }));
 
     setEtherionBalance(prev => prev - totalCost);
@@ -210,13 +211,10 @@ function App() {
   const handleResetSpecificSeats = (seatIds: string[]) => {
     setGloballySoldSeats(prev => prev.filter(id => !seatIds.includes(id)));
 
-    // Improved ticket removal: Reconstruct the ID from ticket data to verify match
-    setPurchasedTickets(prev => prev.filter(ticket => {
-      // Reconstruct exactly like the SVG ID structure: seat-6-row-[ROW]-item-[SEAT]
-      // (Assuming block 6 as per current mapping)
-      const ticketSeatId = `seat-6-row-${ticket.row}-item-${ticket.seat}`;
-      return !seatIds.includes(ticketSeatId);
-    }));
+    // Use the stored originalSeatId for perfect matching during removal
+    setPurchasedTickets(prev => prev.filter(ticket =>
+      !seatIds.includes(ticket.originalSeatId)
+    ));
     alert(`Operación completada: ${seatIds.length} asientos gestionados.`);
   };
 

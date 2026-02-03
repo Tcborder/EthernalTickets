@@ -121,7 +121,10 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                 // In normal mode, selected seats are just normal selected seats
                 if (adminMode) {
                     const element = container.querySelector(`[id='${id}']`);
-                    if (element) element.classList.add('selected');
+                    if (element) {
+                        element.classList.add('selected');
+                        element.classList.add('admin-selected');
+                    }
                 } else {
                     if (soldSeats.includes(id)) return; // Ensure normal user can't select sold seats
                     const element = container.querySelector(`[id='${id}']`);
@@ -142,8 +145,13 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                 if (!isSold) return prev; // Admin can only interact with sold seats
 
                 if (domEl) {
-                    if (!isSelected) domEl.classList.add('selected');
-                    else domEl.classList.remove('selected');
+                    if (!isSelected) {
+                        domEl.classList.add('selected');
+                        domEl.classList.add('admin-selected');
+                    } else {
+                        domEl.classList.remove('selected');
+                        domEl.classList.remove('admin-selected');
+                    }
                 }
 
                 if (isSelected) return prev.filter(s => s !== id);
