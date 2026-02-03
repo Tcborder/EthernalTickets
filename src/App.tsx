@@ -131,6 +131,30 @@ function App() {
     localStorage.setItem('ethernal_admins', JSON.stringify(adminList));
   }, [adminList]);
 
+  // Sync state across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'ethernal_admins' && e.newValue) {
+        setAdminList(JSON.parse(e.newValue));
+      }
+      if (e.key === 'ethernal_user') {
+        setUser(e.newValue);
+      }
+      if (e.key === 'ethernal_all_balances' && e.newValue) {
+        setEtherionBalances(JSON.parse(e.newValue));
+      }
+      if (e.key === 'ethernal_tickets' && e.newValue) {
+        setPurchasedTickets(JSON.parse(e.newValue));
+      }
+      if (e.key === 'ethernal_sold_seats' && e.newValue) {
+        setGloballySoldSeats(JSON.parse(e.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const handleLogout = () => {
     setUser(null);
     setShowUserMenu(false);
