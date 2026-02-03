@@ -43,7 +43,7 @@ rect.purple_wool,
 rect.interactive {
     cursor: pointer;
     pointer-events: all !important;
-    transition: opacity 0.2s ease, stroke 0.2s ease;
+    transition: opacity 0.2s ease;
 }
 
 rect[data-type*="purple_wool"]:hover,
@@ -57,7 +57,7 @@ rect.purple_wool:hover {
 /* Interactivity */
 .seat-map-svg-content [id] {
     cursor: pointer;
-    transition: filter 0.2s, stroke-width 0.2s;
+    transition: filter 0.2s;
 }
 
 .seat-map-svg-content [id]:hover {
@@ -68,6 +68,7 @@ rect.purple_wool:hover {
     fill: #4ade80 !important;
     stroke: white !important;
     stroke-width: 0.2px !important;
+    vector-effect: non-scaling-stroke;
 }
 
 .seat-map-svg-content .sold {
@@ -85,9 +86,7 @@ rect.selected {
     fill: #4ade80 !important;
     stroke: #ffffff !important;
     stroke-width: 0.2px;
-    transform: scale(0.95) !important;
-    transform-box: fill-box;
-    transform-origin: center;
+    vector-effect: non-scaling-stroke;
 }
 
 /* Loading state */
