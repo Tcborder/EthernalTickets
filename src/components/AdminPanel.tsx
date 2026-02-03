@@ -11,6 +11,7 @@ import {
     Coins
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
+import SeatMap from './SeatMap';
 
 interface AdminPanelProps {
     totalTickets: any[];
@@ -42,6 +43,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [etherionsAmount, setEtherionsAmount] = useState('1000');
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [specificSeatsText, setSpecificSeatsText] = useState('');
+
+    const [eventMapTarget, setEventMapTarget] = useState<any>(null);
 
     const renderDashboard = () => (
         <div className="tab-content">
@@ -209,31 +212,64 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     );
 
     const renderEvents = () => {
-        const uniqueEvents = Array.from(new Set(totalTickets.map(t => t.event)));
+        if (eventMapTarget) {
+            return (
+                <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
+                    <SeatMap
+                        onBack={() => setEventMapTarget(null)}
+                        selectedEvent={eventMapTarget}
+                        onPurchase={(seats) => {
+                            if (confirm(`¿Liberar ${seats.length} asientos del evento ${eventMapTarget.title}?`)) {
+                                onResetSpecificSeats(seats);
+                                setEventMapTarget(null);
+                            }
+                        }}
+                        soldSeats={soldSeats}
+                        adminMode={true}
+                    />
+                </div>
+            );
+        }
+
+        // Let's create actual event objects for the map to work
+        // (In a real app, these would come from the database)
+        const mockEvents = [
+            { id: 1, title: "Tame Impala: Slow Rush Tour", location: "Auditorio Telmex, GDL", date: "Noviembre 17, 2026" },
+            { id: 2, title: "Coachella: Desert Vibes", location: "Empire Polo Club, CA", date: "Abril 14, 2026" },
+            { id: 3, title: "EMC Mexico 2026", location: "Autódromo H. Rodríguez, CDMX", date: "Febrero 27, 2026" }
+        ];
+
         return (
             <div className="tab-content">
                 <div className="content-card">
                     <h3 className="card-title"><LayoutDashboard size={20} /> Gestión por Evento</h3>
                     <div className="events-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                        {uniqueEvents.length > 0 ? uniqueEvents.map(event => (
-                            <div key={event} className="content-card" style={{ background: '#111' }}>
-                                <h4 style={{ margin: '0 0 16px 0' }}>{event}</h4>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                    <span>Boletos Vendidos: {totalTickets.filter(t => t.event === event).length}</span>
+                        {mockEvents.map(event => (
+                            <div key={event.id} className="content-card" style={{ background: '#111' }}>
+                                <h4 style={{ margin: '0 0 16px 0' }}>{event.title}</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', color: '#737373', fontSize: '0.85rem' }}>
+                                    <span>Boletos Vendidos: {totalTickets.filter(t => t.event === event.title).length}</span>
                                 </div>
-                                <button
-                                    className="btn-danger-outline"
-                                    style={{ width: '100%' }}
-                                    onClick={() => {
-                                        if (confirm(`¿Resetear todo el evento "${event}"?`)) onResetEvent(event);
-                                    }}
-                                >
-                                    Resetear Evento
-                                </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <button
+                                        className="btn-gray"
+                                        style={{ width: '100%' }}
+                                        onClick={() => setEventMapTarget(event)}
+                                    >
+                                        Gestionar Mapa (Visual)
+                                    </button>
+                                    <button
+                                        className="btn-danger-outline"
+                                        style={{ width: '100%' }}
+                                        onClick={() => {
+                                            if (confirm(`¿Resetear todo el evento "${event.title}"?`)) onResetEvent(event.title);
+                                        }}
+                                    >
+                                        Resetear Todo el Evento
+                                    </button>
+                                </div>
                             </div>
-                        )) : (
-                            <p style={{ color: '#737373' }}>No hay eventos con ventas activas.</p>
-                        )}
+                        ))}
                     </div>
                 </div>
             </div>

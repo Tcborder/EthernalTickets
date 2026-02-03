@@ -187,8 +187,8 @@ function App() {
       location: selectedEvent?.location || '',
       image: selectedEvent?.image || '',
       section: 'AZU201', // Mocked section
-      row: id.split('-')[1],
-      seat: id.split('-')[3]
+      row: id.split('-')[3], // The row letter (e.g., 'B')
+      seat: id.split('-')[5]  // The seat number (e.g., '12')
     }));
 
     setEtherionBalance(prev => prev - totalCost);
@@ -209,12 +209,15 @@ function App() {
 
   const handleResetSpecificSeats = (seatIds: string[]) => {
     setGloballySoldSeats(prev => prev.filter(id => !seatIds.includes(id)));
-    // Also remove tickets associated with these seats
+
+    // Improved ticket removal: Reconstruct the ID from ticket data to verify match
     setPurchasedTickets(prev => prev.filter(ticket => {
+      // Reconstruct exactly like the SVG ID structure: seat-6-row-[ROW]-item-[SEAT]
+      // (Assuming block 6 as per current mapping)
       const ticketSeatId = `seat-6-row-${ticket.row}-item-${ticket.seat}`;
       return !seatIds.includes(ticketSeatId);
     }));
-    alert(`Se han liberado ${seatIds.length} asientos.`);
+    alert(`Operación completada: ${seatIds.length} asientos gestionados.`);
   };
 
   const handleResetEvent = (eventName: string) => {

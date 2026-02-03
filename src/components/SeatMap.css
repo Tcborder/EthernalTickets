@@ -8,6 +8,27 @@
     flex-direction: row;
 }
 
+.seat-map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-badge {
+    background: #ef4444;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
 .seat-map-view {
     flex: 1;
     height: 100%;

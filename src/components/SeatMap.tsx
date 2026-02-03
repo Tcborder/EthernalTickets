@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket, ArrowLeft } from 'lucide-react';
 import './SeatMap.css';
 import coinImage from '../assets/etherion-coin.png';
 
@@ -31,6 +31,7 @@ interface SeatMapProps {
     selectedEvent: any;
     onPurchase: (seats: string[]) => void;
     soldSeats: string[];
+    adminMode?: boolean;
 }
 
 const SeatSvg = React.memo(
@@ -48,7 +49,7 @@ const SeatSvg = React.memo(
     )
 );
 
-const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, soldSeats }) => {
+const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, soldSeats, adminMode = false }) => {
     const [loading, setLoading] = useState(true);
     const [svgContent, setSvgContent] = useState<string>('');
     const [venueData, setVenueData] = useState<VenueData | null>(null);
@@ -116,27 +117,49 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
 
             // Re-apply selected state
             selectedSeats.forEach(id => {
-                if (soldSeats.includes(id)) return;
-                const element = container.querySelector(`[id='${id}']`);
-                if (element) element.classList.add('selected');
+                // In admin mode, selected seats are those that were sold and are now selected for release
+                // In normal mode, selected seats are just normal selected seats
+                if (adminMode) {
+                    const element = container.querySelector(`[id='${id}']`);
+                    if (element) element.classList.add('selected');
+                } else {
+                    if (soldSeats.includes(id)) return; // Ensure normal user can't select sold seats
+                    const element = container.querySelector(`[id='${id}']`);
+                    if (element) element.classList.add('selected');
+                }
             });
         }
-    }, [loading, venueData, svgContent, selectedSeats, soldSeats]); // selectedSeats is now a dependency
+    }, [loading, venueData, svgContent, selectedSeats, soldSeats, adminMode]); // selectedSeats is now a dependency
 
     const toggleSeat = (id: string) => {
         setSelectedSeats(prev => {
-            if (soldSeats.includes(id)) return prev;
+            const isSold = soldSeats.includes(id);
             const isSelected = prev.includes(id);
-
-            // Visual update directly handled here for responsiveness
             const domEl = document.getElementById(id);
-            if (domEl) {
-                if (!isSelected) domEl.classList.add('selected');
-                else domEl.classList.remove('selected');
-            }
 
-            if (isSelected) return prev.filter(s => s !== id);
-            return [...prev, id];
+            if (adminMode) {
+                // In admin mode, only sold seats can be selected/deselected
+                if (!isSold) return prev; // Admin can only interact with sold seats
+
+                if (domEl) {
+                    if (!isSelected) domEl.classList.add('selected');
+                    else domEl.classList.remove('selected');
+                }
+
+                if (isSelected) return prev.filter(s => s !== id);
+                return [...prev, id];
+            } else {
+                // In normal mode, sold seats cannot be selected
+                if (isSold) return prev;
+
+                if (domEl) {
+                    if (!isSelected) domEl.classList.add('selected');
+                    else domEl.classList.remove('selected');
+                }
+
+                if (isSelected) return prev.filter(s => s !== id);
+                return [...prev, id];
+            }
         });
     };
 
@@ -160,7 +183,7 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                 toggleSeat(id);
             }
         }
-    }, [venueData]); // Removed position dependency to avoid re-renders
+    }, [venueData, adminMode, soldSeats]); // Added adminMode and soldSeats dependencies
 
     // Zoom / Pan logic
     // Zoom logic - now triggered directly by wheel without needing Ctrl
@@ -339,11 +362,15 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
             </div>
 
             <div className="seat-info-panel">
-                <div className="panel-header">
+                <div className="seat-map-header">
                     <button className="back-btn" onClick={onBack}>
-                        ← Volver
+                        <ArrowLeft size={20} />
+                        {adminMode ? "Volver a Gestión" : "Cambiar Evento"}
                     </button>
-                    <h3>Tu selección</h3>
+                    <div className="event-info-map">
+                        <h2>{selectedEvent.title} {adminMode && <span className="admin-badge">ADMIN MAP</span>}</h2>
+                        <p>{selectedEvent.location} • {selectedEvent.date}</p>
+                    </div>
                 </div>
 
                 <div className="selected-seats-list">
