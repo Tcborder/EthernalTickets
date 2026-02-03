@@ -84,10 +84,22 @@ function App() {
 
   const isAdmin = user ? adminList.includes(user) : false;
 
-  const [etherionBalance, setEtherionBalance] = useState<number>(() => {
-    const saved = localStorage.getItem('ethernal_balance');
-    return saved ? parseInt(saved, 10) : 1250;
+  const [etherionBalances, setEtherionBalances] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('ethernal_all_balances');
+    return saved ? JSON.parse(saved) : {};
   });
+
+  const etherionBalance = user ? (etherionBalances[user] ?? 1250) : 1250;
+
+  const setEtherionBalance = (newBalance: number | ((prev: number) => number)) => {
+    if (!user) return;
+    setEtherionBalances(prev => {
+      const currentBalance = prev[user] ?? 1250;
+      const finalBalance = typeof newBalance === 'function' ? newBalance(currentBalance) : newBalance;
+      return { ...prev, [user]: finalBalance };
+    });
+  };
+
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>(() => {
     const saved = localStorage.getItem('ethernal_tickets');
     return saved ? JSON.parse(saved) : [];
@@ -104,8 +116,8 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('ethernal_balance', etherionBalance.toString());
-  }, [etherionBalance]);
+    localStorage.setItem('ethernal_all_balances', JSON.stringify(etherionBalances));
+  }, [etherionBalances]);
 
   useEffect(() => {
     localStorage.setItem('ethernal_tickets', JSON.stringify(purchasedTickets));
@@ -121,11 +133,9 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
-    setEtherionBalance(1250);
-    setPurchasedTickets([]);
-    localStorage.clear();
     setShowUserMenu(false);
     setShowUserPortal(false);
+    localStorage.removeItem('ethernal_user');
   };
 
   // Scroll to top when an event is selected
@@ -171,6 +181,7 @@ function App() {
     // Process purchase
     const newTickets = seatIds.map(id => ({
       id: `TK-${Math.floor(Math.random() * 90000) + 10000}`,
+      owner: user,
       event: selectedEvent?.title || 'Evento Desconocido',
       date: selectedEvent?.date || '',
       location: selectedEvent?.location || '',
@@ -477,7 +488,12 @@ function App() {
             onBack={() => setShowAdminPanel(false)}
           />
         ) : showUserPortal && user ? (
-          <UserPortal user={user} tickets={purchasedTickets} balance={etherionBalance} onBack={() => setShowUserPortal(false)} />
+          <UserPortal
+            user={user}
+            tickets={purchasedTickets.filter(t => t.owner === user)}
+            balance={etherionBalance}
+            onBack={() => setShowUserPortal(false)}
+          />
         ) : showStore ? (
           <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
         ) : selectedEvent ? (
