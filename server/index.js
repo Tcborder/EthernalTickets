@@ -128,15 +128,107 @@ const authenticate = (req, res, next) => {
     }
 };
 
+const isAdmin = (req, res, next) => {
+    if (req.user && (req.user.is_admin === 1 || req.user.is_admin === true)) {
+        next();
+    } else {
+        res.status(403).json({ error: "No tienes permisos de administrador" });
+    }
+};
+
+const MAX_SAFE_ETHERIONS = 1000000000000000;
+
 app.get('/api/me', authenticate, async (req, res) => {
     try {
         const result = await turso.execute({
             sql: "SELECT id, email, username, etherion_balance as balance, is_admin FROM users WHERE id = ?",
             args: [req.user.id]
         });
-        res.json(result.rows[0]);
+        const userData = result.rows[0];
+        if (userData) {
+            userData.id = Number(userData.id);
+            userData.balance = Number(userData.balance);
+            userData.is_admin = !!userData.is_admin;
+        }
+        res.json(userData);
     } catch (error) {
         res.status(500).json({ error: "Error al obtener datos del usuario" });
+    }
+});
+
+// --- Admin Routes ---
+
+app.get('/api/admin/users', authenticate, isAdmin, async (req, res) => {
+    try {
+        const result = await turso.execute("SELECT id, email, username, etherion_balance as balance, is_admin FROM users");
+        const users = result.rows.map(row => ({
+            ...row,
+            id: Number(row.id),
+            balance: Number(row.balance),
+            is_admin: !!row.is_admin
+        }));
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener lista de usuarios" });
+    }
+});
+
+app.post('/api/admin/add-balance', authenticate, async (req, res) => {
+    try {
+        let { email, amount } = req.body;
+        const isSelf = req.user.email === email;
+        const isAdminUser = req.user.is_admin === 1 || req.user.is_admin === true;
+
+        if (!isSelf && !isAdminUser) {
+            return res.status(403).json({ error: "No autorizado" });
+        }
+
+        const userRes = await turso.execute({
+            sql: "SELECT etherion_balance FROM users WHERE email = ?",
+            args: [email]
+        });
+
+        if (userRes.rows.length === 0) return res.status(404).json({ error: "No encontrado" });
+
+        let newBalance = Number(userRes.rows[0].etherion_balance) + Number(amount);
+        if (newBalance > MAX_SAFE_ETHERIONS) newBalance = MAX_SAFE_ETHERIONS;
+        if (newBalance < 0) newBalance = 0;
+
+        await turso.execute({
+            sql: "UPDATE users SET etherion_balance = ? WHERE email = ?",
+            args: [newBalance, email]
+        });
+
+        res.json({ success: true, message: "Saldo actualizado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al actualizar saldo" });
+    }
+});
+
+app.post('/api/admin/set-admin', authenticate, isAdmin, async (req, res) => {
+    try {
+        const { email, isAdmin: targetIsAdmin } = req.body;
+        await turso.execute({
+            sql: "UPDATE users SET is_admin = ? WHERE email = ?",
+            args: [targetIsAdmin ? 1 : 0, email]
+        });
+        res.json({ success: true, message: "Rango actualizado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al actualizar rango" });
+    }
+});
+
+app.post('/api/admin/change-password', authenticate, isAdmin, async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+        const hash = await bcrypt.hash(newPassword, 10);
+        await turso.execute({
+            sql: "UPDATE users SET password_hash = ? WHERE email = ?",
+            args: [hash, email]
+        });
+        res.json({ success: true, message: "Contraseña actualizada" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al actualizar contraseña" });
     }
 });
 
@@ -144,21 +236,15 @@ app.get('/api/me', authenticate, async (req, res) => {
 
 app.post('/api/tickets/purchase', authenticate, async (req, res) => {
     const { eventTitle, seats, totalPrice } = req.body;
-
-    // In a real app, we'd start a transaction here
     try {
-        // 1. Check balance
         const userRes = await turso.execute({
             sql: "SELECT etherion_balance FROM users WHERE id = ?",
             args: [req.user.id]
         });
 
-        const balance = userRes.rows[0].etherion_balance;
-        if (balance < totalPrice) {
-            return res.status(400).json({ error: "Fondos insuficientes" });
-        }
+        const balance = Number(userRes.rows[0].etherion_balance);
+        if (balance < totalPrice) return res.status(400).json({ error: "Fondos insuficientes" });
 
-        // 2. Insert tickets
         for (const seatId of seats) {
             await turso.execute({
                 sql: "INSERT INTO tickets (user_id, event_title, seat_id, price) VALUES (?, ?, ?, ?)",
@@ -166,16 +252,49 @@ app.post('/api/tickets/purchase', authenticate, async (req, res) => {
             });
         }
 
-        // 3. Update balance
         await turso.execute({
             sql: "UPDATE users SET etherion_balance = etherion_balance - ? WHERE id = ?",
             args: [totalPrice, req.user.id]
         });
 
-        res.json({ success: true, message: "Compra realizada con éxito" });
+        res.json({ success: true, message: "Compra exitosa" });
     } catch (error) {
-        console.error("Purchase error:", error);
         res.status(500).json({ error: "Error al procesar la compra" });
+    }
+});
+
+app.get('/api/tickets/sold', async (req, res) => {
+    try {
+        const result = await turso.execute("SELECT seat_id FROM tickets");
+        res.json(result.rows.map(row => row.seat_id));
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener ventas" });
+    }
+});
+
+app.get('/api/my-tickets', authenticate, async (req, res) => {
+    try {
+        const result = await turso.execute({
+            sql: "SELECT * FROM tickets WHERE user_id = ? ORDER BY purchase_date DESC",
+            args: [req.user.id]
+        });
+
+        const tickets = result.rows.map(row => ({
+            id: `TK-${row.id}`,
+            event: row.event_title,
+            seat: row.seat_id.split('-').pop(),
+            row: row.seat_id.split('-')[3],
+            section: 'AZU201',
+            location: 'Auditorio Telmex, GDL',
+            price: Number(row.price),
+            date: new Date(row.purchase_date).toLocaleDateString('es-MX', {
+                day: '2-digit', month: 'long', year: 'numeric'
+            })
+        }));
+
+        res.json(tickets);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener boletos" });
     }
 });
 

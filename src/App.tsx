@@ -269,7 +269,7 @@ function AppContent() {
     }
   };
 
-  const handleAssignAdmin = async (email: string) => {
+  const handleSetAdminStatus = async (email: string, targetIsAdmin: boolean) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -281,7 +281,7 @@ function AppContent() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ email, isAdmin: true })
+        body: JSON.stringify({ email, isAdmin: targetIsAdmin })
       });
 
       const data = await response.json();
@@ -293,7 +293,7 @@ function AppContent() {
 
         alert(data.message || `Rango de ${email} actualizado.`);
       } else {
-        alert(data.error || "Error al asignar admin");
+        alert(data.error || "Error al actualizar rango admin");
       }
     } catch (error) {
       console.error("Error setting admin role:", error);
@@ -684,7 +684,8 @@ function AppContent() {
               onResetSpecificSeats={handleResetSpecificSeats}
               onResetEvent={handleResetEvent}
               onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
-              onAssignAdmin={handleAssignAdmin}
+              onAssignAdmin={(email) => handleSetAdminStatus(email, true)}
+              onRemoveAdmin={(email) => handleSetAdminStatus(email, false)}
               onChangePassword={handleChangePassword}
 
               users={users}
@@ -696,7 +697,7 @@ function AppContent() {
         ) : showUserPortal && user ? (
           <UserPortal
             user={user}
-            tickets={purchasedTickets.filter(t => t.owner === user)}
+            tickets={purchasedTickets}
             balance={etherionBalance}
             onBack={() => setShowUserPortal(false)}
           />

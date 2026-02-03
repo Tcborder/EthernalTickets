@@ -22,6 +22,7 @@ interface AdminPanelProps {
     onResetEvent: (eventName: string) => void;
     onAddEtherionsByEmail: (email: string, amount: number) => void;
     onAssignAdmin: (email: string) => void;
+    onRemoveAdmin: (email: string) => void;
     onBack: () => void;
     users: any[];
     onChangePassword: (email: string, newPass: string) => void;
@@ -35,6 +36,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onResetEvent,
     onAddEtherionsByEmail,
     onAssignAdmin,
+    onRemoveAdmin,
     onBack,
     users,
     onChangePassword
@@ -138,10 +140,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div className="content-card">
-                    <h3 className="card-title"><ShieldCheck size={20} /> Nuevo Administrador</h3>
+                    <h3 className="card-title"><ShieldCheck size={20} /> Gestión de Administradores</h3>
                     <div className="admin-form">
                         <div className="form-group">
-                            <label>Correo para Promover</label>
+                            <label>Correo del Usuario</label>
                             <input
                                 type="email"
                                 placeholder="usuario@ethernal.com"
@@ -149,12 +151,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 onChange={(e) => setNewAdminEmail(e.target.value)}
                             />
                         </div>
-                        <button className="btn-gray" onClick={() => {
-                            onAssignAdmin(newAdminEmail);
-                            setNewAdminEmail('');
-                        }}>
-                            Asignar Rango Admin
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button className="btn-gray" style={{ flex: 1 }} onClick={() => {
+                                onAssignAdmin(newAdminEmail);
+                                setNewAdminEmail('');
+                            }}>
+                                Promover a Admin
+                            </button>
+                            <button className="btn-danger-outline" style={{ flex: 1 }} onClick={() => {
+                                onRemoveAdmin(newAdminEmail);
+                                setNewAdminEmail('');
+                            }}>
+                                Remover Admin
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -203,6 +213,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <th>Saldo</th>
                             <th>Rango</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -222,6 +233,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                     }
                                 </td>
                                 <td style={{ color: '#4ade80' }}>Activo</td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {u.is_admin ? (
+                                            <button
+                                                className="btn-danger-outline"
+                                                style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                                                onClick={() => onRemoveAdmin(u.email)}
+                                            >
+                                                Quitar Admin
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className="btn-gray"
+                                                style={{ padding: '4px 8px', fontSize: '0.7rem', background: '#334155' }}
+                                                onClick={() => onAssignAdmin(u.email)}
+                                            >
+                                                Hacer Admin
+                                            </button>
+                                        )}
+                                        <button
+                                            className="btn-gray"
+                                            style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                                            onClick={() => {
+                                                setEtherionsEmail(u.email);
+                                                setActiveTab('users');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                        >
+                                            Dar Fondos
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

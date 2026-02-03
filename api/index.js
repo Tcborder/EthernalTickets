@@ -358,8 +358,11 @@ app.get('/api/my-tickets', authenticate, async (req, res) => {
             seat: row.seat_id.split('-').pop(), // Last part of seat-6-row-A-item-1
             row: row.seat_id.split('-')[3],    // Row part
             section: 'AZU201',               // Default mock section
-            price: row.price,
-            date: row.purchase_date          // Simplified
+            location: 'Auditorio Telmex, GDL',
+            price: Number(row.price),
+            date: new Date(row.purchase_date).toLocaleDateString('es-MX', {
+                day: '2-digit', month: 'long', year: 'numeric'
+            })
         }));
 
         res.json(tickets);
