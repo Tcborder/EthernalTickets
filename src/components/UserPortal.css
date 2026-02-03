@@ -29,6 +29,7 @@
     margin: 0;
     background: linear-gradient(to right, #ffffff, #94a3b8);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -96,18 +97,23 @@
     padding: 20px;
 }
 
-.ticket-qr,
-.ticket-event-thumb {
+.ticket-qr {
     width: 80px;
     height: 80px;
     background: white;
-    padding: 2px;
+    padding: 5px;
+    border-radius: 8px;
+}
+
+.ticket-event-thumb {
+    width: 80px;
+    height: 80px;
     border-radius: 8px;
     object-fit: cover;
 }
 
-.ticket-qr {
-    padding: 5px;
+.hidden {
+    display: none !important;
 }
 
 .ticket-id {

@@ -3,6 +3,12 @@ import './UserPortal.css';
 import { Calendar, MapPin, Ticket, ArrowLeft, QrCode } from 'lucide-react';
 import coinImage from '../assets/etherion-coin.png';
 
+const eventImages: Record<string, string> = {
+    "Tame Impala: Slow Rush Tour": "/events/tame-impala.png",
+    "Coachella: Desert Vibes": "/events/coachella.png",
+    "EMC Mexico 2026": "/events/emc.png"
+};
+
 interface TicketData {
     id: string;
     event: string;
@@ -59,11 +65,22 @@ const UserPortal: React.FC<UserPortalProps> = ({ user, onBack, tickets, balance 
                         {tickets.map(ticket => (
                             <div key={ticket.id} className="portal-ticket-card">
                                 <div className="ticket-visual">
-                                    {ticket.image ? (
-                                        <img src={ticket.image} alt={ticket.event} className="ticket-event-thumb" />
-                                    ) : (
-                                        <QrCode size={60} color="white" className="ticket-qr" />
-                                    )}
+                                    {ticket.image || eventImages[ticket.event] ? (
+                                        <img
+                                            src={ticket.image || eventImages[ticket.event]}
+                                            alt={ticket.event}
+                                            className="ticket-event-thumb"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                            }}
+                                        />
+                                    ) : null}
+                                    <QrCode
+                                        size={40}
+                                        color="#1e293b"
+                                        className={`ticket-qr ${(ticket.image || eventImages[ticket.event]) ? 'hidden' : ''}`}
+                                    />
                                     <span className="ticket-id">{ticket.id}</span>
                                 </div>
 
