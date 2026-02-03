@@ -103,11 +103,15 @@ function AppContent() {
           const response = await fetch(`${API_URL}/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+
           if (response.ok) {
-            const userData = await response.json();
-            setUser(userData.email);
-            setEtherionBalance(userData.balance);
-            setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+              const userData = await response.json();
+              setUser(userData.email);
+              setEtherionBalance(userData.balance);
+              setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
+            }
           } else {
             localStorage.removeItem('token');
             setUser(null);

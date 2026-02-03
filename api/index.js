@@ -10,19 +10,30 @@ dotenv.config();
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'ethernal-secret-key-123';
 
-// Turso Client Config
-const turso = createClient({
-    url: process.env.TURSO_DATABASE_URL || "",
-    authToken: process.env.TURSO_AUTH_TOKEN || "",
-});
+// Helper to get Turso client safely.
+// We initialize it lazily to avoid crashing at startup if env vars are missing.
+let _turso;
+const getTurso = () => {
+    if (_turso) return _turso;
+    const url = process.env.TURSO_DATABASE_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+
+    if (!url || !authToken) {
+        throw new Error("Missing Turso configuration (TURSO_DATABASE_URL or TURSO_AUTH_TOKEN)");
+    }
+
+    _turso = createClient({ url, authToken });
+    return _turso;
+};
 
 app.use(cors());
 app.use(express.json());
 
 // Initialize Database Tables
 const initDb = async () => {
+    const db = getTurso();
     try {
-        await turso.execute(`
+        await db.execute(`
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
@@ -34,7 +45,7 @@ const initDb = async () => {
             )
         `);
 
-        await turso.execute(`
+        await db.execute(`
             CREATE TABLE IF NOT EXISTS tickets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
@@ -46,42 +57,61 @@ const initDb = async () => {
             )
         `);
     } catch (error) {
-        console.error("Error initializing database:", error);
+        console.error("Database initialization failed:", error);
+        throw error;
     }
 };
+
+// Health Check
+app.get('/api/health', async (req, res) => {
+    try {
+        const db = getTurso();
+        await db.execute("SELECT 1");
+        res.json({ status: 'active', database: 'connected', env: process.env.NODE_ENV });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+});
 
 // --- Auth Routes ---
 
 app.post('/api/register', async (req, res) => {
-    await initDb();
-    const { email, password, username } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email y contraseña son obligatorios" });
-
     try {
+        await initDb();
+        const db = getTurso();
+        const { email, password, username } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email y contraseña son obligatorios" });
+        }
+
         const hash = await bcrypt.hash(password, 10);
-        await turso.execute({
+        await db.execute({
             sql: "INSERT INTO users (email, password_hash, username) VALUES (?, ?, ?)",
             args: [email, hash, username || email.split('@')[0]]
         });
+
         res.status(201).json({ success: true, message: "Usuario creado correctamente" });
     } catch (error) {
-        res.status(400).json({ error: "El correo ya está registrado" });
+        console.error("Register error:", error);
+        res.status(500).json({ error: error.message || "Error al registrar usuario" });
     }
 });
 
 app.post('/api/login', async (req, res) => {
-    await initDb();
-    const { email, password } = req.body;
-
     try {
-        const result = await turso.execute({
+        await initDb();
+        const db = getTurso();
+        const { email, password } = req.body;
+
+        const result = await db.execute({
             sql: "SELECT * FROM users WHERE email = ?",
             args: [email]
         });
 
         const user = result.rows[0];
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-            return res.status(401).json({ error: "Credenciales inválidas" });
+            return res.status(401).json({ error: "Correo o contraseña incorrectos" });
         }
 
         const token = jwt.sign(
@@ -102,7 +132,8 @@ app.post('/api/login', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ error: "Error en el servidor" });
+        console.error("Login error:", error);
+        res.status(500).json({ error: error.message || "Error al iniciar sesión" });
     }
 });
 
@@ -114,47 +145,53 @@ const authenticate = (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(401).json({ error: "Token inválido" });
+        res.status(401).json({ error: "Sesión expirada o inválida" });
     }
 };
 
 app.get('/api/me', authenticate, async (req, res) => {
-    await initDb();
     try {
-        const result = await turso.execute({
+        await initDb();
+        const db = getTurso();
+        const result = await db.execute({
             sql: "SELECT id, email, username, etherion_balance as balance, is_admin FROM users WHERE id = ?",
             args: [req.user.id]
         });
         res.json(result.rows[0]);
     } catch (error) {
-        res.status(500).json({ error: "Error al obtener datos" });
+        res.status(500).json({ error: "Error al obtener perfil" });
     }
 });
 
 app.post('/api/tickets/purchase', authenticate, async (req, res) => {
-    await initDb();
-    const { eventTitle, seats, totalPrice } = req.body;
     try {
-        const userRes = await turso.execute({
+        await initDb();
+        const db = getTurso();
+        const { eventTitle, seats, totalPrice } = req.body;
+
+        const userRes = await db.execute({
             sql: "SELECT etherion_balance FROM users WHERE id = ?",
             args: [req.user.id]
         });
+
         const balance = userRes.rows[0].etherion_balance;
-        if (balance < totalPrice) return res.status(400).json({ error: "Fondos insuficientes" });
+        if (balance < totalPrice) return res.status(400).json({ error: "Saldo insuficiente" });
 
         for (const seatId of seats) {
-            await turso.execute({
+            await db.execute({
                 sql: "INSERT INTO tickets (user_id, event_title, seat_id, price) VALUES (?, ?, ?, ?)",
                 args: [req.user.id, eventTitle, seatId, totalPrice / seats.length]
             });
         }
-        await turso.execute({
+
+        await db.execute({
             sql: "UPDATE users SET etherion_balance = etherion_balance - ? WHERE id = ?",
             args: [totalPrice, req.user.id]
         });
-        res.json({ success: true });
+
+        res.json({ success: true, message: "¡Compra exitosa!" });
     } catch (error) {
-        res.status(500).json({ error: "Error en la compra" });
+        res.status(500).json({ error: "Error al procesar la compra" });
     }
 });
 

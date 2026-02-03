@@ -35,7 +35,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
                 body: JSON.stringify(body),
             });
 
-            const data = await response.json();
+            const contentType = response.headers.get("content-type");
+            let data;
+
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(text || `Error del servidor (${response.status})`);
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || 'Algo salió mal');
