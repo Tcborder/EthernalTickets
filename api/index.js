@@ -22,7 +22,11 @@ const getTurso = () => {
         throw new Error("Missing Turso configuration (TURSO_DATABASE_URL or TURSO_AUTH_TOKEN)");
     }
 
-    _turso = createClient({ url, authToken });
+    _turso = createClient({
+        url,
+        authToken,
+        intMode: 'bigint' // Safely handle extremely large numbers from Turso
+    });
     return _turso;
 };
 
