@@ -119,7 +119,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, is_admin: user.is_admin },
+            { id: Number(user.id), email: user.email, is_admin: Number(user.is_admin) === 1 },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -128,11 +128,11 @@ app.post('/api/login', async (req, res) => {
             success: true,
             token,
             user: {
-                id: user.id,
+                id: Number(user.id),
                 email: user.email,
                 username: user.username,
-                balance: user.etherion_balance,
-                is_admin: user.is_admin
+                balance: Number(user.etherion_balance),
+                is_admin: Number(user.is_admin) === 1
             }
         });
     } catch (error) {
@@ -161,7 +161,14 @@ app.get('/api/me', authenticate, async (req, res) => {
             sql: "SELECT id, email, username, etherion_balance as balance, is_admin FROM users WHERE id = ?",
             args: [req.user.id]
         });
-        res.json(result.rows[0]);
+
+        const userData = result.rows[0];
+        if (userData) {
+            userData.id = Number(userData.id);
+            userData.balance = Number(userData.balance);
+            userData.is_admin = Number(userData.is_admin) === 1;
+        }
+        res.json(userData);
     } catch (error) {
         res.status(500).json({ error: "Error al obtener perfil" });
     }
@@ -232,7 +239,7 @@ app.post('/api/tickets/purchase', authenticate, async (req, res) => {
             args: [req.user.id]
         });
 
-        const balance = userRes.rows[0].etherion_balance;
+        const balance = Number(userRes.rows[0].etherion_balance);
         if (balance < totalPrice) return res.status(400).json({ error: "Saldo insuficiente" });
 
         for (const seatId of seats) {
