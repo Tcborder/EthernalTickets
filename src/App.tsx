@@ -76,7 +76,14 @@ function App() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const isAdmin = user === 'admin@ethernal.com' || user === 'tcborder020@gmail.com'; // Admin definition
+
+  const [adminList, setAdminList] = useState<string[]>(() => {
+    const saved = localStorage.getItem('ethernal_admins');
+    return saved ? JSON.parse(saved) : ['admin@ethernal.com', 'tcborder020@gmail.com'];
+  });
+
+  const isAdmin = user ? adminList.includes(user) : false;
+
   const [etherionBalance, setEtherionBalance] = useState<number>(() => {
     const saved = localStorage.getItem('ethernal_balance');
     return saved ? parseInt(saved, 10) : 1250;
@@ -108,6 +115,10 @@ function App() {
     localStorage.setItem('ethernal_sold_seats', JSON.stringify(globallySoldSeats));
   }, [globallySoldSeats]);
 
+  useEffect(() => {
+    localStorage.setItem('ethernal_admins', JSON.stringify(adminList));
+  }, [adminList]);
+
   const handleLogout = () => {
     setUser(null);
     setEtherionBalance(1250);
@@ -125,10 +136,23 @@ function App() {
     }
   }, [selectedEvent]);
 
-  const handleBuyEtherions = (amount: number) => {
+  const handleBuyEtherions = (amount: number, targetEmail?: string) => {
+    if (targetEmail && targetEmail !== user) {
+      alert(`Se han asignado ${amount} Etherions al usuario ${targetEmail}. (Simulado)`);
+      return;
+    }
     setEtherionBalance(prev => prev + amount);
-    alert(`¡Has comprado ${amount} Etherions!`);
+    alert(`¡Has recibido ${amount} Etherions!`);
     setShowStore(false);
+  };
+
+  const handleAssignAdmin = (email: string) => {
+    if (!adminList.includes(email)) {
+      setAdminList(prev => [...prev, email]);
+      alert(`El usuario ${email} ahora es administrador.`);
+    } else {
+      alert("Este usuario ya es administrador.");
+    }
   };
 
   const handlePurchaseSeats = (seatIds: string[]) => {
@@ -425,7 +449,9 @@ function App() {
             totalTickets={purchasedTickets}
             soldSeats={globallySoldSeats}
             onResetSeats={handleResetSeats}
-            onAddEtherions={handleBuyEtherions}
+            onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
+            onAssignAdmin={handleAssignAdmin}
+            adminList={adminList}
             onBack={() => setShowAdminPanel(false)}
           />
         ) : showUserPortal && user ? (
