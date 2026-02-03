@@ -73,10 +73,13 @@ function App() {
   const [user, setUser] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
+  const [etherionBalance, setEtherionBalance] = useState(1250);
+  const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
 
   const handleLogout = () => {
     setUser(null);
     setShowUserMenu(false);
+    setShowUserPortal(false);
   };
 
   // Scroll to top when an event is selected
@@ -88,9 +91,40 @@ function App() {
   }, [selectedEvent]);
 
   const handleBuyEtherions = (amount: number) => {
+    setEtherionBalance(prev => prev + amount);
     alert(`¡Has comprado ${amount} Etherions!`);
-    // Here you would integrate with payment gateway
     setShowStore(false);
+  };
+
+  const handlePurchaseSeats = (seatIds: string[]) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const totalCost = seatIds.length * 200;
+    if (etherionBalance < totalCost) {
+      alert("No tienes suficientes Etherions. Visita la tienda para recargar.");
+      setShowStore(true);
+      return;
+    }
+
+    // Process purchase
+    const newTickets = seatIds.map(id => ({
+      id: `TK-${Math.floor(Math.random() * 90000) + 10000}`,
+      event: selectedEvent?.title || 'Evento Desconocido',
+      date: selectedEvent?.date || '',
+      location: selectedEvent?.location || '',
+      section: 'AZU201', // Mocked section
+      row: id.split('-')[1],
+      seat: id.split('-')[3]
+    }));
+
+    setEtherionBalance(prev => prev - totalCost);
+    setPurchasedTickets(prev => [...prev, ...newTickets]);
+    setSelectedEvent(null);
+    setShowUserPortal(true);
+    alert("¡Compra realizada con éxito! Revisa tus boletos en el portal.");
   };
 
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -207,7 +241,7 @@ function App() {
               onClick={() => { setShowStore(true); setSelectedEvent(null); }}
             >
               <img src={coinImage} alt="Etherion" style={{ width: '24px', height: '24px' }} />
-              <span style={{ color: '#4ade80', fontWeight: '600' }}>0 Etherions</span>
+              <span style={{ color: '#4ade80', fontWeight: '600' }}>{etherionBalance.toLocaleString()} Etherions</span>
             </div>
             <div
               className="nav-link-new"
@@ -310,13 +344,17 @@ function App() {
           />
         )}
         {showUserPortal && user ? (
-          <UserPortal user={user} onBack={() => setShowUserPortal(false)} />
+          <UserPortal user={user} tickets={purchasedTickets} balance={etherionBalance} onBack={() => setShowUserPortal(false)} />
         ) : showStore ? (
           <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
         ) : selectedEvent ? (
           <section className="section" style={{ paddingTop: '80px', minHeight: '100vh', maxWidth: '100%', padding: '0' }}>
             <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
-              <SeatMap onBack={() => setSelectedEvent(null)} selectedEvent={selectedEvent} />
+              <SeatMap
+                onBack={() => setSelectedEvent(null)}
+                selectedEvent={selectedEvent}
+                onPurchase={handlePurchaseSeats}
+              />
             </div>
           </section>
         ) : (

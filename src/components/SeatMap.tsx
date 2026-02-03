@@ -29,6 +29,7 @@ interface VenueData {
 interface SeatMapProps {
     onBack: () => void;
     selectedEvent: any;
+    onPurchase: (seats: string[]) => void;
 }
 
 const SeatSvg = React.memo(
@@ -46,7 +47,7 @@ const SeatSvg = React.memo(
     )
 );
 
-const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent }) => {
+const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase }) => {
     const [loading, setLoading] = useState(true);
     const [svgContent, setSvgContent] = useState<string>('');
     const [venueData, setVenueData] = useState<VenueData | null>(null);
@@ -392,7 +393,11 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent }) => {
                             {(selectedSeats.length * 200).toLocaleString()}
                         </span>
                     </div>
-                    <button className="checkout-btn" disabled={selectedSeats.length === 0}>
+                    <button
+                        className="checkout-btn"
+                        disabled={selectedSeats.length === 0}
+                        onClick={() => onPurchase(selectedSeats)}
+                    >
                         Comprar boletos
                     </button>
                 </div>
