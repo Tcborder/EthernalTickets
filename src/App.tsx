@@ -70,14 +70,38 @@ function App() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showStore, setShowStore] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [user, setUser] = useState<string | null>(null);
+  // Initialize state from localStorage
+  const [user, setUser] = useState<string | null>(() => localStorage.getItem('ethernal_user'));
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
-  const [etherionBalance, setEtherionBalance] = useState(1250);
-  const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
+  const [etherionBalance, setEtherionBalance] = useState<number>(() => {
+    const saved = localStorage.getItem('ethernal_balance');
+    return saved ? parseInt(saved, 10) : 1250;
+  });
+  const [purchasedTickets, setPurchasedTickets] = useState<any[]>(() => {
+    const saved = localStorage.getItem('ethernal_tickets');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Persist state to localStorage
+  useEffect(() => {
+    if (user) localStorage.setItem('ethernal_user', user);
+    else localStorage.removeItem('ethernal_user');
+  }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem('ethernal_balance', etherionBalance.toString());
+  }, [etherionBalance]);
+
+  useEffect(() => {
+    localStorage.setItem('ethernal_tickets', JSON.stringify(purchasedTickets));
+  }, [purchasedTickets]);
 
   const handleLogout = () => {
     setUser(null);
+    setEtherionBalance(1250);
+    setPurchasedTickets([]);
+    localStorage.clear();
     setShowUserMenu(false);
     setShowUserPortal(false);
   };
