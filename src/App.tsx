@@ -7,6 +7,7 @@ import EtherionStore from './components/EtherionStore';
 import AuthModal from './components/AuthModal';
 import UserPortal from './components/UserPortal';
 import AdminPanel from './components/AdminPanel';
+import SuccessModal from './components/SuccessModal';
 import ethernalLogo from './assets/Images/logoethernal.png';
 import coinImage from './assets/etherion-coin.png';
 import { formatEtherions } from './utils/formatters';
@@ -79,6 +80,7 @@ function AppContent() {
   const [user, setUser] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const showAdminPanel = location.pathname === '/adminpanel';
 
   const [isAdmin, setIsAdmin] = useState(false); // Changed to state variable
@@ -387,7 +389,7 @@ function AppContent() {
 
         setSelectedEvent(null);
         setShowUserPortal(true);
-        alert("¡Compra realizada con éxito! Revisa tus boletos en el portal.");
+        setShowSuccessModal(true);
       } else {
         alert(data.error || "Error al realizar la compra");
       }
@@ -708,6 +710,11 @@ function AppContent() {
             }}
           />
         )}
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          message="¡Tu compra en Ethernal Tickets ha sido procesada! Don Bigotes ya está celebrando. Revisa tus boletos en el portal."
+        />
         {showAdminPanel ? (
           isAdmin ? (
             <AdminPanel
