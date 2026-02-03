@@ -11,6 +11,7 @@ interface TicketData {
     section: string;
     row: string;
     seat: string;
+    image?: string;
 }
 
 interface UserPortalProps {
@@ -58,7 +59,11 @@ const UserPortal: React.FC<UserPortalProps> = ({ user, onBack, tickets, balance 
                         {tickets.map(ticket => (
                             <div key={ticket.id} className="portal-ticket-card">
                                 <div className="ticket-visual">
-                                    <QrCode size={60} color="white" className="ticket-qr" />
+                                    {ticket.image ? (
+                                        <img src={ticket.image} alt={ticket.event} className="ticket-event-thumb" />
+                                    ) : (
+                                        <QrCode size={60} color="white" className="ticket-qr" />
+                                    )}
                                     <span className="ticket-id">{ticket.id}</span>
                                 </div>
 

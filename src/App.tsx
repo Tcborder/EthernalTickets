@@ -185,6 +185,7 @@ function App() {
       event: selectedEvent?.title || 'Evento Desconocido',
       date: selectedEvent?.date || '',
       location: selectedEvent?.location || '',
+      image: selectedEvent?.image || '',
       section: 'AZU201', // Mocked section
       row: id.split('-')[1],
       seat: id.split('-')[3]
