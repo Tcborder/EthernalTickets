@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft, LogOut, Ticket, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SeatMap from './components/SeatMap';
@@ -50,7 +51,9 @@ const events: Event[] = [
   }
 ];
 
-function App() {
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedCategory] = useState("All");
 
@@ -75,7 +78,7 @@ function App() {
   const [user, setUser] = useState<string | null>(() => localStorage.getItem('ethernal_user'));
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const showAdminPanel = location.pathname === '/adminpanel';
 
   const [adminList, setAdminList] = useState<string[]>(() => {
     const saved = localStorage.getItem('ethernal_admins');
@@ -345,7 +348,18 @@ function App() {
       <header className={`header ${isScrolled ? 'scrolled' : ''}`} style={{ display: showAdminPanel ? 'none' : 'block' }}>
         <div className="header-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <a href="#home" className="logo" onClick={() => { setSelectedEvent(null); setShowStore(false); setShowUserPortal(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <a
+              href="/"
+              className="logo"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/');
+                setSelectedEvent(null);
+                setShowStore(false);
+                setShowUserPortal(false);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
               <img src={ethernalLogo} alt="Ethernal" style={{ height: '32px', width: 'auto' }} />
               <span style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#ffffff' }}>Tickets</span>
             </a>
@@ -427,11 +441,11 @@ function App() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowAdminPanel(true);
                         setShowUserMenu(false);
                         setSelectedEvent(null);
                         setShowStore(false);
                         setShowUserPortal(false);
+                        navigate('/adminpanel');
                       }}
                       style={{
                         display: 'flex',
@@ -501,18 +515,22 @@ function App() {
             }}
           />
         )}
-        {showAdminPanel && isAdmin ? (
-          <AdminPanel
-            totalTickets={purchasedTickets}
-            soldSeats={globallySoldSeats}
-            onResetSeats={handleResetSeats}
-            onResetSpecificSeats={handleResetSpecificSeats}
-            onResetEvent={handleResetEvent}
-            onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
-            onAssignAdmin={handleAssignAdmin}
-            adminList={adminList}
-            onBack={() => setShowAdminPanel(false)}
-          />
+        {showAdminPanel ? (
+          isAdmin ? (
+            <AdminPanel
+              totalTickets={purchasedTickets}
+              soldSeats={globallySoldSeats}
+              onResetSeats={handleResetSeats}
+              onResetSpecificSeats={handleResetSpecificSeats}
+              onResetEvent={handleResetEvent}
+              onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
+              onAssignAdmin={handleAssignAdmin}
+              adminList={adminList}
+              onBack={() => {
+                navigate('/');
+              }}
+            />
+          ) : <Navigate to="/" />
         ) : showUserPortal && user ? (
           <UserPortal
             user={user}
@@ -788,6 +806,16 @@ function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="*" element={<AppContent />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
