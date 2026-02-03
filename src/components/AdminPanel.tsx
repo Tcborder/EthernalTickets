@@ -12,7 +12,6 @@ import {
     Key
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
-import SeatMap from './SeatMap';
 import { formatEtherions, parseAbbreviatedNumber } from '../utils/formatters';
 
 interface AdminPanelProps {
@@ -24,7 +23,6 @@ interface AdminPanelProps {
     onAddEtherionsByEmail: (email: string, amount: number) => void;
     onAssignAdmin: (email: string) => void;
     onBack: () => void;
-    adminList: string[];
     users: any[];
     onChangePassword: (email: string, newPass: string) => void;
 }
@@ -38,7 +36,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onAddEtherionsByEmail,
     onAssignAdmin,
     onBack,
-    adminList,
     users,
     onChangePassword
 }) => {
@@ -51,8 +48,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [changePasswordEmail, setChangePasswordEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [specificSeatsText, setSpecificSeatsText] = useState('');
-
-    const [eventMapTarget, setEventMapTarget] = useState<any>(null);
 
     const renderDashboard = () => (
         <div className="tab-content">
@@ -70,8 +65,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="value">{soldSeats.length} / 2500</div>
                 </div>
                 <div className="stat-box">
-                    <span className="label">Usuarios</span>
-                    <div className="value">{users.length}</div>
+                    <span className="label">Administradores</span>
+                    <div className="value">{users.filter(u => u.is_admin).length}</div>
                 </div>
             </div>
 
