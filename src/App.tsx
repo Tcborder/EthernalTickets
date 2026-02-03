@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft, LogOut } from 'lucide-react';
+import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft, LogOut, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SeatMap from './components/SeatMap';
 import EtherionStore from './components/EtherionStore';
 import AuthModal from './components/AuthModal';
+import UserPortal from './components/UserPortal';
 import ethernalLogo from './assets/Images/logoethernal.png';
 import coinImage from './assets/etherion-coin.png';
 import './App.css';
@@ -71,6 +72,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showUserPortal, setShowUserPortal] = useState(false);
 
   const handleLogout = () => {
     setUser(null);
@@ -184,7 +186,7 @@ function App() {
       <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
         <div className="header-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <a href="#home" className="logo" onClick={() => setSelectedEvent(null)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <a href="#home" className="logo" onClick={() => { setSelectedEvent(null); setShowStore(false); setShowUserPortal(false); }} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <img src={ethernalLogo} alt="Ethernal" style={{ height: '32px', width: 'auto' }} />
               <span style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#ffffff' }}>Tickets</span>
             </a>
@@ -235,7 +237,38 @@ function App() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setShowUserPortal(true);
+                      setShowUserMenu(false);
+                      setSelectedEvent(null);
+                      setShowStore(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'white',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      width: '100%',
+                      textAlign: 'left',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Ticket size={16} />
+                    Mis Boletos
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleLogout();
+                      setShowUserPortal(false);
                     }}
                     style={{
                       display: 'flex',
@@ -276,7 +309,9 @@ function App() {
             }}
           />
         )}
-        {showStore ? (
+        {showUserPortal && user ? (
+          <UserPortal user={user} onBack={() => setShowUserPortal(false)} />
+        ) : showStore ? (
           <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
         ) : selectedEvent ? (
           <section className="section" style={{ paddingTop: '80px', minHeight: '100vh', maxWidth: '100%', padding: '0' }}>
