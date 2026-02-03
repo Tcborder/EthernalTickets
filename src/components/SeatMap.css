@@ -66,9 +66,8 @@ rect.purple_wool:hover {
 
 .seat-map-svg-content .selected {
     fill: #4ade80 !important;
-    filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6));
     stroke: white !important;
-    stroke-width: 1.5px !important;
+    stroke-width: 0.2px !important;
 }
 
 .seat-map-svg-content .sold {
@@ -85,8 +84,8 @@ rect.purple_wool:hover {
 rect.selected {
     fill: #4ade80 !important;
     stroke: #ffffff !important;
-    stroke-width: 0.1px;
-    transform: scale(0.85) !important;
+    stroke-width: 0.2px;
+    transform: scale(0.95) !important;
     transform-box: fill-box;
     transform-origin: center;
 }
