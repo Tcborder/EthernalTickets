@@ -76,7 +76,7 @@ function App() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showUserPortal, setShowUserPortal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const isAdmin = user === 'admin@ethernal.com'; // Admin definition
+  const isAdmin = user === 'admin@ethernal.com' || user === 'tcborder020@gmail.com'; // Admin definition
   const [etherionBalance, setEtherionBalance] = useState<number>(() => {
     const saved = localStorage.getItem('ethernal_balance');
     return saved ? parseInt(saved, 10) : 1250;

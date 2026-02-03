@@ -1,6 +1,6 @@
 import React from 'react';
 import './AdminPanel.css';
-import { LayoutDashboard, Users, Ticket, Settings, ArrowLeft, Trash2, RefreshCcw } from 'lucide-react';
+import { LayoutDashboard, Users, Ticket, Settings, ArrowLeft, RefreshCcw } from 'lucide-react';
 
 interface AdminPanelProps {
     totalTickets: any[];
