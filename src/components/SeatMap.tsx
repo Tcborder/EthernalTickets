@@ -31,6 +31,7 @@ interface SeatMapProps {
     selectedEvent: any;
     onPurchase: (seats: string[]) => void;
     soldSeats: string[];
+    onSelectionChange?: (seats: string[]) => void;
     adminMode?: boolean;
 }
 
@@ -49,7 +50,7 @@ const SeatSvg = React.memo(
     )
 );
 
-const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, soldSeats, adminMode = false }) => {
+const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, soldSeats, onSelectionChange, adminMode = false }) => {
     const [loading, setLoading] = useState(true);
     const [svgContent, setSvgContent] = useState<string>('');
     const [venueData, setVenueData] = useState<VenueData | null>(null);
@@ -133,6 +134,12 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
             });
         }
     }, [loading, venueData, svgContent, selectedSeats, soldSeats, adminMode]); // selectedSeats is now a dependency
+
+    useEffect(() => {
+        if (onSelectionChange) {
+            onSelectionChange(selectedSeats);
+        }
+    }, [selectedSeats, onSelectionChange]);
 
     const toggleSeat = (id: string) => {
         setSelectedSeats(prev => {
@@ -387,17 +394,6 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
             </div>
 
             <div className="seat-info-panel">
-                <div className="seat-map-header">
-                    <button className="back-btn" onClick={onBack}>
-                        <ArrowLeft size={20} />
-                        {adminMode ? "Volver a Gestión" : "Cambiar Evento"}
-                    </button>
-                    <div className="event-info-map">
-                        <h2>{selectedEvent.title} {adminMode && <span className="admin-badge">ADMIN MAP</span>}</h2>
-                        <p>{selectedEvent.location} • {selectedEvent.date}</p>
-                    </div>
-                </div>
-
                 <div className="selected-seats-list">
                     {selectedSeats.length > 0 ? (
                         selectedSeats.map(id => (

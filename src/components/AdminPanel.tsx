@@ -45,6 +45,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [specificSeatsText, setSpecificSeatsText] = useState('');
 
     const [eventMapTarget, setEventMapTarget] = useState<any>(null);
+    const [adminSelectedSeats, setAdminSelectedSeats] = useState<string[]>([]);
 
     const renderDashboard = () => (
         <div className="tab-content">
@@ -216,14 +217,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             return (
                 <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
                     <SeatMap
-                        onBack={() => setEventMapTarget(null)}
+                        onBack={() => {
+                            setEventMapTarget(null);
+                            setAdminSelectedSeats([]);
+                        }}
                         selectedEvent={eventMapTarget}
                         onPurchase={(seats) => {
                             if (confirm(`¿Liberar ${seats.length} asientos del evento ${eventMapTarget.title}?`)) {
                                 onResetSpecificSeats(seats);
                                 setEventMapTarget(null);
+                                setAdminSelectedSeats([]);
                             }
                         }}
+                        onSelectionChange={setAdminSelectedSeats}
                         soldSeats={soldSeats}
                         adminMode={true}
                     />
@@ -372,14 +378,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </aside>
 
             <main className="admin-main">
-                <header className="admin-header">
+                <header className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2>
                         {activeTab === 'dashboard' && 'Resumen de Ventas'}
                         {activeTab === 'users' && 'Gestión de Usuarios'}
                         {activeTab === 'tickets' && 'Base de Datos de Boletos'}
-                        {activeTab === 'events' && 'Gestión por Evento'}
+                        {activeTab === 'events' && (eventMapTarget ? `Gestionando: ${eventMapTarget.title}` : 'Gestión por Evento')}
                         {activeTab === 'settings' && 'Mantenimiento Técnico'}
                     </h2>
+
+                    {activeTab === 'events' && eventMapTarget && adminSelectedSeats.length > 0 && (
+                        <button
+                            className="btn-danger"
+                            style={{
+                                padding: '10px 20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                background: '#ef4444',
+                                border: 'none',
+                                color: 'white',
+                                borderRadius: '8px',
+                                fontWeight: '900',
+                                cursor: 'pointer',
+                                boxShadow: '0 0 20px rgba(239, 68, 68, 0.4)'
+                            }}
+                            onClick={() => {
+                                if (confirm(`¿Confirmas liberar ${adminSelectedSeats.length} asientos?`)) {
+                                    onResetSpecificSeats(adminSelectedSeats);
+                                    setEventMapTarget(null);
+                                    setAdminSelectedSeats([]);
+                                }
+                            }}
+                        >
+                            <RefreshCcw size={18} />
+                            APLICAR CAMBIOS ({adminSelectedSeats.length})
+                        </button>
+                    )}
                 </header>
 
                 {activeTab === 'dashboard' && renderDashboard()}
