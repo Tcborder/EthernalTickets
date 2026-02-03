@@ -108,19 +108,25 @@
 .success-action-btn {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #a855f7, #ec4899);
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 243, 255, 0.3);
     border-radius: 12px;
     color: white;
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .success-action-btn:hover {
+    background: rgba(0, 243, 255, 0.1);
+    border-color: rgba(0, 243, 255, 1);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(168, 85, 247, 0.3);
 }
 
 .success-action-btn:active {
