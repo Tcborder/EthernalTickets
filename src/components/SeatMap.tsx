@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, RefreshCcw, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, X } from 'lucide-react';
 import './SeatMap.css';
 
 
@@ -220,40 +220,7 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
 
     return (
         <div className="seat-map-container" ref={containerRef}>
-            {/* FLOATING ACTION BUTTON - IMPOSSIBLE TO MISS */}
-            {adminMode && selectedSeats.length > 0 && (
-                <button
-                    className="apply-changes-btn-floating pulse-button"
-                    onClick={async () => {
-                        await onPurchase(selectedSeats);
-                        setSelectedSeats([]);
-                    }}
-                    style={{
-                        position: 'fixed',
-                        top: '40px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        zIndex: 2000,
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        padding: '20px 40px',
-                        borderRadius: '16px',
-                        fontWeight: '900',
-                        fontSize: '1.4rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        boxShadow: '0 0 50px rgba(239, 68, 68, 0.8)',
-                        pointerEvents: 'all',
-                        animation: 'pulse 2s infinite'
-                    }}
-                >
-                    <RefreshCcw size={28} />
-                    REESTABLECER {selectedSeats.length} ASIENTOS
-                </button>
-            )}
+
 
             {/* FLOATING EXIT BUTTON FOR ADMIN */}
             {adminMode && (
@@ -333,11 +300,11 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
                                     <div className="ticket-info-row">
                                         <div className="ticket-info-item">
                                             <span className="label">FILA</span>
-                                            <span className="value">{id.split('-')[1]}</span>
+                                            <span className="value">{id.split('-')[3] || '?'}</span>
                                         </div>
                                         <div className="ticket-info-item">
                                             <span className="label">ASIENTO</span>
-                                            <span className="value">{id.split('-')[3]}</span>
+                                            <span className="value">{id.split('-').pop()}</span>
                                         </div>
                                     </div>
                                     <div className="ticket-footer-row">
@@ -367,8 +334,8 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
                         className={adminMode ? "checkout-btn release-btn" : "checkout-btn"}
                         disabled={selectedSeats.length === 0}
                         onClick={async () => {
-                            await onPurchase(selectedSeats);
-                            setSelectedSeats([]);
+                            const success = await onPurchase(selectedSeats);
+                            if (success !== false) setSelectedSeats([]);
                         }}
                     >
                         {adminMode ? "RESTAURAR ASIENTOS" : "Comprar boletos"}

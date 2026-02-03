@@ -302,7 +302,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 await onResetSpecificSeats(seatsToRevoke);
                                 // Refresh sold seats for this event
                                 fetchEventSoldSeats(viewEventMap.title);
+                                return true;
                             }
+                            return false;
                         }}
                     />
                 </div>
