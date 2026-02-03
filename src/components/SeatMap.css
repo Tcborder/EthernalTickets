@@ -54,6 +54,33 @@ rect.purple_wool:hover {
     stroke-width: 0.1px;
 }
 
+/* Interactivity */
+.seat-map-svg-content [id] {
+    cursor: pointer;
+    transition: filter 0.2s, stroke-width 0.2s;
+}
+
+.seat-map-svg-content [id]:hover {
+    filter: brightness(1.3);
+}
+
+.seat-map-svg-content .selected {
+    fill: #4ade80 !important;
+    filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6));
+    stroke: white !important;
+    stroke-width: 1.5px !important;
+}
+
+.seat-map-svg-content .sold {
+    fill: #475569 !important;
+    /* Muted gray */
+    opacity: 0.6;
+    cursor: not-allowed !important;
+    filter: none !important;
+    pointer-events: none;
+    /* Block all interactions */
+}
+
 /* El cuadro de selección verde (más refinado) */
 rect.selected {
     fill: #4ade80 !important;

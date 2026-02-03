@@ -82,6 +82,10 @@ function App() {
     const saved = localStorage.getItem('ethernal_tickets');
     return saved ? JSON.parse(saved) : [];
   });
+  const [globallySoldSeats, setGloballySoldSeats] = useState<string[]>(() => {
+    const saved = localStorage.getItem('ethernal_sold_seats');
+    return saved ? JSON.parse(saved) : ['seat-6-row-B-item-12', 'seat-6-row-B-item-13']; // Some mock sold seats
+  });
 
   // Persist state to localStorage
   useEffect(() => {
@@ -96,6 +100,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('ethernal_tickets', JSON.stringify(purchasedTickets));
   }, [purchasedTickets]);
+
+  useEffect(() => {
+    localStorage.setItem('ethernal_sold_seats', JSON.stringify(globallySoldSeats));
+  }, [globallySoldSeats]);
 
   const handleLogout = () => {
     setUser(null);
@@ -146,6 +154,7 @@ function App() {
 
     setEtherionBalance(prev => prev - totalCost);
     setPurchasedTickets(prev => [...prev, ...newTickets]);
+    setGloballySoldSeats(prev => [...prev, ...seatIds]);
     setSelectedEvent(null);
     setShowUserPortal(true);
     alert("¡Compra realizada con éxito! Revisa tus boletos en el portal.");
@@ -378,6 +387,7 @@ function App() {
                 onBack={() => setSelectedEvent(null)}
                 selectedEvent={selectedEvent}
                 onPurchase={handlePurchaseSeats}
+                soldSeats={globallySoldSeats}
               />
             </div>
           </section>

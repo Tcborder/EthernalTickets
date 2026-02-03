@@ -30,6 +30,7 @@ interface SeatMapProps {
     onBack: () => void;
     selectedEvent: any;
     onPurchase: (seats: string[]) => void;
+    soldSeats: string[];
 }
 
 const SeatSvg = React.memo(
@@ -47,7 +48,7 @@ const SeatSvg = React.memo(
     )
 );
 
-const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase }) => {
+const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, soldSeats }) => {
     const [loading, setLoading] = useState(true);
     const [svgContent, setSvgContent] = useState<string>('');
     const [venueData, setVenueData] = useState<VenueData | null>(null);
@@ -102,18 +103,29 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase }) 
             const container = svgContainerRef.current;
 
             // Clear previous selections first to ensure sync
-            container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            container.querySelectorAll('.selected, .sold').forEach(el => {
+                el.classList.remove('selected');
+                el.classList.remove('sold');
+            });
+
+            // Apply sold state (priority)
+            soldSeats.forEach(id => {
+                const element = container.querySelector(`[id='${id}']`);
+                if (element) element.classList.add('sold');
+            });
 
             // Re-apply selected state
             selectedSeats.forEach(id => {
+                if (soldSeats.includes(id)) return;
                 const element = container.querySelector(`[id='${id}']`);
                 if (element) element.classList.add('selected');
             });
         }
-    }, [loading, venueData, svgContent, selectedSeats]); // selectedSeats is now a dependency
+    }, [loading, venueData, svgContent, selectedSeats, soldSeats]); // selectedSeats is now a dependency
 
     const toggleSeat = (id: string) => {
         setSelectedSeats(prev => {
+            if (soldSeats.includes(id)) return prev;
             const isSelected = prev.includes(id);
 
             // Visual update directly handled here for responsiveness
