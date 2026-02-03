@@ -214,14 +214,41 @@ function AppContent() {
     }
   }, [selectedEvent]);
 
-  const handleBuyEtherions = (amount: number, targetEmail?: string) => {
-    if (targetEmail && targetEmail !== user) {
-      alert(`Se han asignado ${amount} Etherions al usuario ${targetEmail}. (Simulado)`);
+  const handleBuyEtherions = async (amount: number, targetEmail?: string) => {
+    const token = localStorage.getItem('token');
+    const emailToUpdate = targetEmail || user;
+
+    if (!token || !emailToUpdate) {
+      alert("Debes iniciar sesión para realizar esta acción.");
       return;
     }
-    setEtherionBalance(prev => prev + amount);
-    alert(`¡Has recibido ${amount} Etherions!`);
-    setShowStore(false);
+
+    try {
+      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+      const response = await fetch(`${API_URL}/admin/add-balance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: emailToUpdate, amount })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        // If we updated ourselves, update the local balance state too
+        if (emailToUpdate === user) {
+          setEtherionBalance(prev => prev + amount);
+        }
+        alert(data.message || `¡Se han añadido ${amount} Etherions!`);
+        setShowStore(false);
+      } else {
+        alert(data.error || "Error al actualizar saldo");
+      }
+    } catch (error) {
+      console.error("Error updating balance:", error);
+      alert("Error de conexión con el servidor");
+    }
   };
 
   const handleAssignAdmin = (email: string) => {

@@ -163,6 +163,48 @@ app.get('/api/me', authenticate, async (req, res) => {
     }
 });
 
+const isAdmin = (req, res, next) => {
+    if (req.user && (req.user.is_admin === 1 || req.user.is_admin === true)) {
+        next();
+    } else {
+        res.status(403).json({ error: "No tienes permisos de administrador" });
+    }
+};
+
+app.post('/api/admin/add-balance', authenticate, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const { email, amount } = req.body;
+
+        if (!email || amount === undefined) {
+            return res.status(400).json({ error: "Email y cantidad son requeridos" });
+        }
+
+        // Allow if user is updating themselves OR if they are an admin
+        const isSelf = req.user.email === email;
+        const isAdminUser = req.user.is_admin === 1 || req.user.is_admin === true;
+
+        if (!isSelf && !isAdminUser) {
+            return res.status(403).json({ error: "No tienes permisos para realizar esta acción" });
+        }
+
+        const result = await db.execute({
+            sql: "UPDATE users SET etherion_balance = etherion_balance + ? WHERE email = ?",
+            args: [amount, email]
+        });
+
+        if (result.rowsAffected === 0) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        res.json({ success: true, message: `Se han añadido ${amount} Etherions a ${email}` });
+    } catch (error) {
+        console.error("Balance update error:", error);
+        res.status(500).json({ error: "Error al procesar la recarga" });
+    }
+});
+
 app.post('/api/tickets/purchase', authenticate, async (req, res) => {
     try {
         await initDb();
