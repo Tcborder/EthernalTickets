@@ -284,6 +284,44 @@ app.post('/api/tickets/purchase', authenticate, async (req, res) => {
     }
 });
 
+app.get('/api/tickets/sold', async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const result = await db.execute("SELECT seat_id FROM tickets");
+        const soldSeats = result.rows.map(row => row.seat_id);
+        res.json(soldSeats);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener asientos ocupados" });
+    }
+});
+
+app.get('/api/my-tickets', authenticate, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const result = await db.execute({
+            sql: "SELECT * FROM tickets WHERE user_id = ? ORDER BY purchase_date DESC",
+            args: [req.user.id]
+        });
+
+        // Map to match the frontend TicketData interface
+        const tickets = result.rows.map(row => ({
+            id: `TK-${row.id}`,
+            event: row.event_title,
+            seat: row.seat_id.split('-').pop(), // Last part of seat-6-row-A-item-1
+            row: row.seat_id.split('-')[3],    // Row part
+            section: 'AZU201',               // Default mock section
+            price: row.price,
+            date: row.purchase_date          // Simplified
+        }));
+
+        res.json(tickets);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener tus boletos" });
+    }
+});
+
 // For local development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3001;

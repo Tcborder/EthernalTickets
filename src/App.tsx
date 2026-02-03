@@ -96,52 +96,62 @@ function AppContent() {
   const [etherionBalance, setEtherionBalance] = useState(0); // Changed to state variable
 
   useEffect(() => {
-    const checkUser = async () => {
+    const checkData = async () => {
       const token = localStorage.getItem('token');
+      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+
+      // 1. Check User
       if (token) {
         try {
-          const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
           const response = await fetch(`${API_URL}/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
 
           if (response.ok) {
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-              const userData = await response.json();
-              setUser(userData.email);
-              setEtherionBalance(userData.balance);
-              setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
+            const userData = await response.json();
+            setUser(userData.email);
+            setEtherionBalance(userData.balance);
+            setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
+
+            // 2. Fetch Tickets (only if user is logged in)
+            const tResponse = await fetch(`${API_URL}/my-tickets`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (tResponse.ok) {
+              const tickets = await tResponse.json();
+              setPurchasedTickets(tickets);
             }
           } else {
             localStorage.removeItem('token');
             setUser(null);
-            setIsAdmin(false);
             setEtherionBalance(0);
+            setIsAdmin(false);
           }
         } catch (error) {
           console.error("Auth check failed:", error);
-          localStorage.removeItem('token');
-          setUser(null);
-          setIsAdmin(false);
-          setEtherionBalance(0);
         }
       }
+
+      // 3. Fetch Sold Seats (public)
+      try {
+        const sResponse = await fetch(`${API_URL}/tickets/sold`);
+        if (sResponse.ok) {
+          const seats = await sResponse.json();
+          setGloballySoldSeats(seats);
+        }
+      } catch (err) {
+        console.error("Error fetching sold seats:", err);
+      }
     };
-    checkUser();
-  }, []);
+
+    checkData();
+  }, [user]);
 
 
 
 
-  const [purchasedTickets, setPurchasedTickets] = useState<any[]>(() => {
-    const saved = localStorage.getItem('ethernal_tickets');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [globallySoldSeats, setGloballySoldSeats] = useState<string[]>(() => {
-    const saved = localStorage.getItem('ethernal_sold_seats');
-    return saved ? JSON.parse(saved) : ['seat-6-row-B-item-12', 'seat-6-row-B-item-13']; // Some mock sold seats
-  });
+  const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
+  const [globallySoldSeats, setGloballySoldSeats] = useState<string[]>([]);
 
   // Persist state to localStorage
   // The 'ethernal_user' persistence is now handled by 'token' and 'user' in the new auth flow
@@ -150,13 +160,7 @@ function AppContent() {
     localStorage.setItem('ethernal_all_balances', JSON.stringify(etherionBalances));
   }, [etherionBalances]);
 
-  useEffect(() => {
-    localStorage.setItem('ethernal_tickets', JSON.stringify(purchasedTickets));
-  }, [purchasedTickets]);
-
-  useEffect(() => {
-    localStorage.setItem('ethernal_sold_seats', JSON.stringify(globallySoldSeats));
-  }, [globallySoldSeats]);
+  // Removed manual localStorage persistence for tickets/seats as we now use the DB
 
   useEffect(() => {
     localStorage.setItem('ethernal_admins', JSON.stringify(adminList));
@@ -288,7 +292,7 @@ function AppContent() {
     }
   };
 
-  const handlePurchaseSeats = (seatIds: string[]) => {
+  const handlePurchaseSeats = async (seatIds: string[]) => {
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -301,26 +305,46 @@ function AppContent() {
       return;
     }
 
-    // Process purchase
-    const newTickets = seatIds.map(id => ({
-      id: `TK-${Math.floor(Math.random() * 90000) + 10000}`,
-      owner: user,
-      event: selectedEvent?.title || 'Evento Desconocido',
-      date: selectedEvent?.date || '',
-      location: selectedEvent?.location || '',
-      image: selectedEvent?.image || '',
-      originalSeatId: id, // Store full ID for reliable deletion/sync
-      section: 'AZU201', // Mocked section
-      row: id.split('-')[3],
-      seat: id.split('-')[5]
-    }));
+    const token = localStorage.getItem('token');
+    try {
+      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+      const response = await fetch(`${API_URL}/tickets/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eventTitle: selectedEvent?.title || 'Evento Desconocido',
+          seats: seatIds,
+          totalPrice: totalCost
+        })
+      });
 
-    setEtherionBalance(prev => prev - totalCost);
-    setPurchasedTickets(prev => [...prev, ...newTickets]);
-    setGloballySoldSeats(prev => [...prev, ...seatIds]);
-    setSelectedEvent(null);
-    setShowUserPortal(true);
-    alert("¡Compra realizada con éxito! Revisa tus boletos en el portal.");
+      const data = await response.json();
+      if (response.ok) {
+        setEtherionBalance(prev => prev - totalCost);
+        setGloballySoldSeats(prev => [...prev, ...seatIds]);
+
+        // Refresh tickets
+        const tResponse = await fetch(`${API_URL}/my-tickets`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (tResponse.ok) {
+          const tickets = await tResponse.json();
+          setPurchasedTickets(tickets);
+        }
+
+        setSelectedEvent(null);
+        setShowUserPortal(true);
+        alert("¡Compra realizada con éxito! Revisa tus boletos en el portal.");
+      } else {
+        alert(data.error || "Error al realizar la compra");
+      }
+    } catch (error) {
+      console.error("Purchase error:", error);
+      alert("Error de conexión al procesar la compra");
+    }
   };
 
   const handleResetSeats = () => {
