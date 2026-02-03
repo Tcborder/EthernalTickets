@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket, RefreshCcw, ShieldCheck, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, RefreshCcw, X } from 'lucide-react';
 import './SeatMap.css';
-import coinImage from '../assets/etherion-coin.png';
+
 
 // We use ?raw to import the SVG string directly
 import auditoriumSvgRaw from '../assets/venueInfo/Auditorio Telmex/AuditorioTelmex.svg?raw';
@@ -28,7 +28,6 @@ interface VenueData {
 
 interface SeatMapProps {
     onBack: () => void;
-    selectedEvent: any;
     onPurchase: (seats: string[]) => void;
     soldSeats: string[];
     onSelectionChange?: (seats: string[]) => void;
@@ -50,7 +49,7 @@ const SeatSvg = React.memo(
     )
 );
 
-const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, soldSeats, onSelectionChange, adminMode = false }) => {
+const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSelectionChange, adminMode = false }) => {
     const [loading, setLoading] = useState(true);
     const [svgContent, setSvgContent] = useState<string>('');
     const [venueData, setVenueData] = useState<VenueData | null>(null);
@@ -107,12 +106,12 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
             });
 
             soldSeats.forEach(id => {
-                const element = container.querySelector(`[id='${id}']`);
+                const element = container.querySelector(`[id = '${id}']`);
                 if (element) element.classList.add('sold');
             });
 
             selectedSeats.forEach(id => {
-                const element = container.querySelector(`[id='${id}']`);
+                const element = container.querySelector(`[id = '${id}']`);
                 if (element) {
                     element.classList.add('selected');
                     if (adminMode) element.classList.add('admin-selected');

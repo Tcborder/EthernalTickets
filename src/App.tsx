@@ -126,16 +126,7 @@ function AppContent() {
     checkUser();
   }, []);
 
-  // This function is now redundant as setEtherionBalance is a direct state setter
-  // Keeping it for now, but it might be removed if not used elsewhere with the old logic
-  const updateEtherionBalanceForUser = (newBalance: number | ((prev: number) => number)) => {
-    if (!user) return;
-    setEtherionBalances(prev => {
-      const currentBalance = prev[user] ?? 0; // Use 0 as default if not found
-      const finalBalance = typeof newBalance === 'function' ? newBalance(currentBalance) : newBalance;
-      return { ...prev, [user]: finalBalance };
-    });
-  };
+
 
 
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>(() => {
@@ -588,7 +579,6 @@ function AppContent() {
             <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
               <SeatMap
                 onBack={() => setSelectedEvent(null)}
-                selectedEvent={selectedEvent}
                 onPurchase={handlePurchaseSeats}
                 soldSeats={globallySoldSeats}
               />

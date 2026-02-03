@@ -216,8 +216,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             return (
                 <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
                     <SeatMap
-                        onBack={() => setEventMapTarget(null)}
-                        selectedEvent={eventMapTarget}
+                        onBack={() => {
+                            setEventMapTarget(null);
+                        }}
                         onPurchase={(seats: string[]) => {
                             if (confirm(`¿Confirmas reactivar estos ${seats.length} asientos?`)) {
                                 onResetSpecificSeats(seats);
