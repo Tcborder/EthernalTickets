@@ -298,7 +298,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <button
                                         className="btn-danger-outline"
                                         style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                                        onClick={() => onResetSpecificSeats([`seat-6-row-${ticket.row}-item-${ticket.seat}`])}
+                                        onClick={() => onResetSpecificSeats([ticket.originalSeatId])}
                                     >
                                         Revocar
                                     </button>

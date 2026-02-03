@@ -272,6 +272,43 @@ app.get('/api/tickets/sold', async (req, res) => {
     }
 });
 
+app.post('/api/admin/tickets/reset', authenticate, isAdmin, async (req, res) => {
+    try {
+        await turso.execute("DELETE FROM tickets");
+        res.json({ success: true, message: "Sistema reseteado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al resetear" });
+    }
+});
+
+app.post('/api/admin/tickets/revoke', authenticate, isAdmin, async (req, res) => {
+    try {
+        const { seatIds } = req.body;
+        for (const seatId of seatIds) {
+            await turso.execute({
+                sql: "DELETE FROM tickets WHERE seat_id = ?",
+                args: [seatId]
+            });
+        }
+        res.json({ success: true, message: "Boletos revocados" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al revocar" });
+    }
+});
+
+app.post('/api/admin/tickets/reset-event', authenticate, isAdmin, async (req, res) => {
+    try {
+        const { eventTitle } = req.body;
+        await turso.execute({
+            sql: "DELETE FROM tickets WHERE event_title = ?",
+            args: [eventTitle]
+        });
+        res.json({ success: true, message: "Evento reseteado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al resetear evento" });
+    }
+});
+
 app.get('/api/my-tickets', authenticate, async (req, res) => {
     try {
         const result = await turso.execute({
@@ -284,6 +321,7 @@ app.get('/api/my-tickets', authenticate, async (req, res) => {
             event: row.event_title,
             seat: row.seat_id.split('-').pop(),
             row: row.seat_id.split('-')[3],
+            originalSeatId: row.seat_id,
             section: 'AZU201',
             location: 'Auditorio Telmex, GDL',
             price: Number(row.price),

@@ -383,32 +383,85 @@ function AppContent() {
     }
   };
 
-  const handleResetSeats = () => {
-    setGloballySoldSeats([]);
-    setPurchasedTickets([]);
-    localStorage.removeItem('ethernal_sold_seats');
-    localStorage.removeItem('ethernal_tickets');
-    alert("Mapa de asientos reseteado con éxito.");
+  const handleResetSeats = async () => {
+    const token = localStorage.getItem('token');
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+
+    try {
+      const response = await fetch(`${API_URL}/admin/tickets/reset`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        setGloballySoldSeats([]);
+        setPurchasedTickets([]);
+        alert("Mapa de asientos reseteado con éxito.");
+      } else {
+        alert("Error al resetear el sistema");
+      }
+    } catch (error) {
+      console.error("Reset error:", error);
+    }
   };
 
-  const handleResetSpecificSeats = (seatIds: string[]) => {
-    setGloballySoldSeats(prev => prev.filter(id => !seatIds.includes(id)));
+  const handleResetSpecificSeats = async (seatIds: string[]) => {
+    const token = localStorage.getItem('token');
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
 
-    // Use the stored originalSeatId for perfect matching during removal
-    setPurchasedTickets(prev => prev.filter(ticket =>
-      !seatIds.includes(ticket.originalSeatId)
-    ));
-    alert(`Operación completada: ${seatIds.length} asientos gestionados.`);
+    try {
+      const response = await fetch(`${API_URL}/admin/tickets/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ seatIds })
+      });
+
+      if (response.ok) {
+        setGloballySoldSeats(prev => prev.filter(id => !seatIds.includes(id)));
+        setPurchasedTickets(prev => prev.filter(ticket =>
+          !seatIds.includes(ticket.originalSeatId)
+        ));
+        alert(`Operación completada: ${seatIds.length} asientos gestionados.`);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Error al revocar boletos");
+      }
+    } catch (error) {
+      console.error("Revoke error:", error);
+    }
   };
 
-  const handleResetEvent = (eventName: string) => {
-    // Collect all seat IDs for this event to free them
-    const ticketsToRemove = purchasedTickets.filter(t => t.event === eventName);
-    const seatIdsToRemove = ticketsToRemove.map(t => `seat-6-row-${t.row}-item-${t.seat}`);
+  const handleResetEvent = async (eventName: string) => {
+    const token = localStorage.getItem('token');
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
 
-    setGloballySoldSeats(prev => prev.filter(id => !seatIdsToRemove.includes(id)));
-    setPurchasedTickets(prev => prev.filter(t => t.event !== eventName));
-    alert(`Se ha reseteado el evento "${eventName}".`);
+    try {
+      const response = await fetch(`${API_URL}/admin/tickets/reset-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ eventTitle: eventName })
+      });
+
+      if (response.ok) {
+        const ticketsToRemove = purchasedTickets.filter(t => t.event === eventName);
+        const seatIdsToRemove = ticketsToRemove.map(t => t.originalSeatId);
+
+        setGloballySoldSeats(prev => prev.filter(id => !seatIdsToRemove.includes(id)));
+        setPurchasedTickets(prev => prev.filter(t => t.event !== eventName));
+        alert(`Se ha reseteado el evento "${eventName}".`);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Error al resetear evento");
+      }
+    } catch (error) {
+      console.error("Reset event error:", error);
+    }
   };
 
   const [showDatePicker, setShowDatePicker] = useState(false);

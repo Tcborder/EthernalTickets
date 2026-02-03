@@ -342,6 +342,53 @@ app.get('/api/tickets/sold', async (req, res) => {
     }
 });
 
+app.post('/api/admin/tickets/reset', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        await db.execute("DELETE FROM tickets");
+        res.json({ success: true, message: "Sistema de tickets reseteado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al resetear tickets" });
+    }
+});
+
+app.post('/api/admin/tickets/revoke', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const { seatIds } = req.body;
+        if (!seatIds || !Array.isArray(seatIds)) return res.status(400).json({ error: "seatIds es requerido" });
+
+        for (const seatId of seatIds) {
+            await db.execute({
+                sql: "DELETE FROM tickets WHERE seat_id = ?",
+                args: [seatId]
+            });
+        }
+        res.json({ success: true, message: "Boletos revocados correctamente" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al revocar boletos" });
+    }
+});
+
+app.post('/api/admin/tickets/reset-event', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const { eventTitle } = req.body;
+        if (!eventTitle) return res.status(400).json({ error: "eventTitle es requerido" });
+
+        await db.execute({
+            sql: "DELETE FROM tickets WHERE event_title = ?",
+            args: [eventTitle]
+        });
+        res.json({ success: true, message: `Evento ${eventTitle} reseteado` });
+    } catch (error) {
+        res.status(500).json({ error: "Error al resetear evento" });
+    }
+});
+
 app.get('/api/my-tickets', authenticate, async (req, res) => {
     try {
         await initDb();
@@ -357,6 +404,7 @@ app.get('/api/my-tickets', authenticate, async (req, res) => {
             event: row.event_title,
             seat: row.seat_id.split('-').pop(), // Last part of seat-6-row-A-item-1
             row: row.seat_id.split('-')[3],    // Row part
+            originalSeatId: row.seat_id,
             section: 'AZU201',               // Default mock section
             location: 'Auditorio Telmex, GDL',
             price: Number(row.price),
