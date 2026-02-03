@@ -434,35 +434,7 @@ function AppContent() {
     }
   };
 
-  const handleResetEvent = async (eventName: string) => {
-    const token = localStorage.getItem('token');
-    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
 
-    try {
-      const response = await fetch(`${API_URL}/admin/tickets/reset-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ eventTitle: eventName })
-      });
-
-      if (response.ok) {
-        const ticketsToRemove = purchasedTickets.filter(t => t.event === eventName);
-        const seatIdsToRemove = ticketsToRemove.map(t => t.originalSeatId);
-
-        setGloballySoldSeats(prev => prev.filter(id => !seatIdsToRemove.includes(id)));
-        setPurchasedTickets(prev => prev.filter(t => t.event !== eventName));
-        alert(`Se ha reseteado el evento "${eventName}".`);
-      } else {
-        const data = await response.json();
-        alert(data.error || "Error al resetear evento");
-      }
-    } catch (error) {
-      console.error("Reset event error:", error);
-    }
-  };
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -735,7 +707,6 @@ function AppContent() {
               soldSeats={globallySoldSeats}
               onResetSeats={handleResetSeats}
               onResetSpecificSeats={handleResetSpecificSeats}
-              onResetEvent={handleResetEvent}
               onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
               onAssignAdmin={(email) => handleSetAdminStatus(email, true)}
               onRemoveAdmin={(email) => handleSetAdminStatus(email, false)}

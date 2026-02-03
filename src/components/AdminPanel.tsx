@@ -6,7 +6,6 @@ import {
     Ticket,
     Settings,
     ArrowLeft,
-    RefreshCcw,
     ShieldCheck,
     Coins,
     Key
@@ -19,7 +18,6 @@ interface AdminPanelProps {
     soldSeats: string[];
     onResetSeats: () => void;
     onResetSpecificSeats: (seatIds: string[]) => void;
-    onResetEvent: (eventName: string) => void;
     onAddEtherionsByEmail: (email: string, amount: number) => void;
     onAssignAdmin: (email: string) => void;
     onRemoveAdmin: (email: string) => void;
@@ -33,7 +31,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     soldSeats,
     onResetSeats,
     onResetSpecificSeats,
-    onResetEvent,
     onAddEtherionsByEmail,
     onAssignAdmin,
     onRemoveAdmin,
@@ -41,7 +38,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     users,
     onChangePassword
 }) => {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'events' | 'settings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'settings'>('dashboard');
 
     // Form states
     const [etherionsEmail, setEtherionsEmail] = useState('');
@@ -49,7 +46,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [changePasswordEmail, setChangePasswordEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
-    const [specificSeatsText, setSpecificSeatsText] = useState('');
 
     const renderDashboard = () => (
         <div className="tab-content">
@@ -311,67 +307,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
     );
 
-    const renderEvents = () => (
-        <div className="tab-content">
-            <div className="admin-grid">
-                <div className="content-card">
-                    <h3 className="card-title">Resetear Asientos</h3>
-                    <div className="form-group">
-                        <label>ID de Asientos (separados por coma)</label>
-                        <textarea
-                            placeholder="seat-6-row-B-item-12, seat-6-row-A-item-5"
-                            value={specificSeatsText}
-                            onChange={(e) => setSpecificSeatsText(e.target.value)}
-                        />
-                    </div>
-                    <button className="btn-danger-outline" onClick={() => {
-                        const ids = specificSeatsText.split(',').map(s => s.trim()).filter(s => s);
-                        onResetSpecificSeats(ids);
-                        setSpecificSeatsText('');
-                    }}>
-                        Liberar Asientos
-                    </button>
-                </div>
 
-                <div className="content-card">
-                    <h3 className="card-title">Ocupación Actual</h3>
-                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                        {soldSeats.length === 0 ? <p>No hay asientos ocupados.</p> : (
-                            <div className="seat-summary">
-                                {soldSeats.map(id => <span key={id} className="seat-id-tag">{id}</span>)}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="content-card" style={{ marginTop: '24px' }}>
-                <h3 className="card-title">Estado de Eventos</h3>
-                <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Evento</th>
-                            <th>Ventas</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {[...new Set(totalTickets.map(t => t.event))].map(eventName => (
-                            <tr key={eventName}>
-                                <td>{eventName}</td>
-                                <td>{totalTickets.filter(t => t.event === eventName).length} boletos</td>
-                                <td>
-                                    <button className="btn-danger-outline" onClick={() => onResetEvent(eventName)}>
-                                        Limpiar Todo el Evento
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
 
     const renderSettings = () => (
         <div className="tab-content">
@@ -424,12 +360,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         >
                             <Ticket size={20} /> Boletos
                         </button>
-                        <button
-                            className={activeTab === 'events' ? 'active' : ''}
-                            onClick={() => setActiveTab('events')}
-                        >
-                            <RefreshCcw size={20} /> Gestión Global
-                        </button>
+
                         <button
                             className={activeTab === 'settings' ? 'active' : ''}
                             onClick={() => setActiveTab('settings')}
@@ -455,7 +386,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     {activeTab === 'dashboard' && renderDashboard()}
                     {activeTab === 'users' && renderUsers()}
                     {activeTab === 'tickets' && renderTickets()}
-                    {activeTab === 'events' && renderEvents()}
+
                     {activeTab === 'settings' && renderSettings()}
                 </main>
             </div>
