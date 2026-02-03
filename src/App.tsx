@@ -196,6 +196,7 @@ function AppContent() {
   const handleLogout = () => {
     setUser(null);
     setIsAdmin(false);
+    setEtherionBalance(0);
     setShowUserMenu(false);
     setShowUserPortal(false);
     localStorage.removeItem('token');
