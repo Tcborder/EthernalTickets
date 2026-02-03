@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket, ArrowLeft, RefreshCcw, ShieldCheck } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket, RefreshCcw, ShieldCheck, X } from 'lucide-react';
 import './SeatMap.css';
 import coinImage from '../assets/etherion-coin.png';
 
@@ -62,17 +62,16 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
     const transformRef = useRef({ x: 0, y: 0, scale: 1 });
     const contentRef = useRef<HTMLDivElement>(null);
     const isDraggingRef = useRef(false);
-    const hasMovedRef = useRef(false); // Track if current press moved enough to be a drag
+    const hasMovedRef = useRef(false);
     const dragStartRef = useRef({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
-    const viewRef = useRef<HTMLDivElement>(null); // Specific ref for the interactive area
+    const viewRef = useRef<HTMLDivElement>(null);
     const svgContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                // Load JSON dynamically
                 const dataModule = await import('../assets/venueInfo/Auditorio Telmex/AuditorioTelmex.json');
                 const data = dataModule.default as VenueData;
                 setVenueData(data);
@@ -83,7 +82,6 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                 setLoading(false);
             }
         };
-
         loadData();
     }, []);
 
@@ -99,41 +97,29 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
         }
     };
 
-    // Initialize interactive elements
     useEffect(() => {
         if (!loading && venueData && svgContainerRef.current) {
             const container = svgContainerRef.current;
-
-            // Clear previous selections first to ensure sync
-            container.querySelectorAll('.selected, .sold').forEach(el => {
+            container.querySelectorAll('.selected, .sold, .admin-selected').forEach(el => {
                 el.classList.remove('selected');
                 el.classList.remove('sold');
+                el.classList.remove('admin-selected');
             });
 
-            // Apply sold state (priority)
             soldSeats.forEach(id => {
                 const element = container.querySelector(`[id='${id}']`);
                 if (element) element.classList.add('sold');
             });
 
-            // Re-apply selected state
             selectedSeats.forEach(id => {
-                // In admin mode, selected seats are those that were sold and are now selected for release
-                // In normal mode, selected seats are just normal selected seats
-                if (adminMode) {
-                    const element = container.querySelector(`[id='${id}']`);
-                    if (element) {
-                        element.classList.add('selected');
-                        element.classList.add('admin-selected');
-                    }
-                } else {
-                    if (soldSeats.includes(id)) return; // Ensure normal user can't select sold seats
-                    const element = container.querySelector(`[id='${id}']`);
-                    if (element) element.classList.add('selected');
+                const element = container.querySelector(`[id='${id}']`);
+                if (element) {
+                    element.classList.add('selected');
+                    if (adminMode) element.classList.add('admin-selected');
                 }
             });
         }
-    }, [loading, venueData, svgContent, selectedSeats, soldSeats, adminMode]); // selectedSeats is now a dependency
+    }, [loading, venueData, svgContent, selectedSeats, soldSeats, adminMode]);
 
     useEffect(() => {
         if (onSelectionChange) {
@@ -145,80 +131,44 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
         setSelectedSeats(prev => {
             const isSold = soldSeats.includes(id);
             const isSelected = prev.includes(id);
-            const domEl = document.getElementById(id);
 
             if (adminMode) {
-                // In admin mode, only sold seats can be selected/deselected
-                if (!isSold) return prev; // Admin can only interact with sold seats
-
-                if (domEl) {
-                    if (!isSelected) {
-                        domEl.classList.add('selected');
-                        domEl.classList.add('admin-selected');
-                    } else {
-                        domEl.classList.remove('selected');
-                        domEl.classList.remove('admin-selected');
-                    }
-                }
-
+                // In admin mode, we can only select seats to release (they must be in soldSeats)
+                if (!isSold) return prev;
                 if (isSelected) return prev.filter(s => s !== id);
                 return [...prev, id];
             } else {
-                // In normal mode, sold seats cannot be selected
                 if (isSold) return prev;
-
-                if (domEl) {
-                    if (!isSelected) domEl.classList.add('selected');
-                    else domEl.classList.remove('selected');
-                }
-
                 if (isSelected) return prev.filter(s => s !== id);
                 return [...prev, id];
             }
         });
     };
 
-    // Optimized click handler using delegating logic
     const handleSeatClick = React.useCallback((event: React.MouseEvent) => {
-        // Prevent click if we were dragging
         if (hasMovedRef.current) return;
-
         const target = event.target as SVGElement;
         const element = target.id ? target : target.closest('[id]');
         const id = element?.id;
-
         if (id && venueData) {
-            // Check if it's a seat based on attribute or class (FAST)
             const type = target.getAttribute('data-type') || "";
             const isSeat = type.includes('purple_wool') ||
                 target.classList.contains('seat') ||
                 target.classList.contains('purple_wool');
-
-            if (isSeat) {
-                toggleSeat(id);
-            }
+            if (isSeat) toggleSeat(id);
         }
-    }, [venueData, adminMode, soldSeats]); // Added adminMode and soldSeats dependencies
+    }, [venueData, adminMode, soldSeats]);
 
-    // Zoom / Pan logic
-    // Zoom logic - now triggered directly by wheel without needing Ctrl
     const handleWheel = React.useCallback((e: WheelEvent) => {
-        e.preventDefault(); // Bloquear scroll de la página
-        e.stopPropagation(); // Evitar que el evento suba
-
+        e.preventDefault();
+        e.stopPropagation();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
-
-        setScale(prevScale => {
-            const newScale = Math.min(Math.max(0.2, prevScale * delta), 8);
-            return newScale;
-        });
+        setScale(prevScale => Math.min(Math.max(0.2, prevScale * delta), 8));
     }, []);
 
-    // Use native listener to ensure we can prevent default scrolling
     useEffect(() => {
         const view = viewRef.current;
         if (view) {
-            // passive: false es CRÍTICO para poder hacer preventDefault()
             view.addEventListener('wheel', handleWheel, { passive: false });
             return () => view.removeEventListener('wheel', handleWheel);
         }
@@ -226,7 +176,7 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
 
     const handleMouseDown = (e: React.MouseEvent) => {
         isDraggingRef.current = true;
-        hasMovedRef.current = false; // Reset on every press
+        hasMovedRef.current = false;
         dragStartRef.current = {
             x: e.clientX - transformRef.current.x,
             y: e.clientY - transformRef.current.y
@@ -239,15 +189,11 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
             e.preventDefault();
             const newX = e.clientX - dragStartRef.current.x;
             const newY = e.clientY - dragStartRef.current.y;
-
-            // Simple move threshold to differentiate click vs drag
             if (Math.abs(newX - transformRef.current.x) > 3 || Math.abs(newY - transformRef.current.y) > 3) {
                 hasMovedRef.current = true;
             }
-
             transformRef.current.x = newX;
             transformRef.current.y = newY;
-
             requestAnimationFrame(updateTransform);
         }
     };
@@ -255,12 +201,8 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
     const handleMouseUp = () => {
         if (isDraggingRef.current) {
             isDraggingRef.current = false;
-            // Sync React state at the end of dragging
             setPosition({ x: transformRef.current.x, y: transformRef.current.y });
             if (contentRef.current) contentRef.current.style.transition = 'transform 0.1s ease-out';
-
-            // Note: we don't reset hasMovedRef here because the click event fires AFTER mouseUp
-            // We'll reset it on mouseDown
         }
     };
 
@@ -277,27 +219,65 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
         );
     }
 
-
-
     return (
         <div className="seat-map-container" ref={containerRef}>
-            {adminMode && (
-                <div className="admin-map-floating-header">
-                    <div className="admin-status-pill">
-                        <ShieldCheck size={16} />
-                        MODO ADMINISTRADOR - Selecciona asientos grises para liberar
-                    </div>
-                    {selectedSeats.length > 0 && (
-                        <button
-                            className="apply-changes-btn-floating"
-                            onClick={() => onPurchase(selectedSeats)}
-                        >
-                            <RefreshCcw size={18} />
-                            APLICAR CAMBIOS ({selectedSeats.length})
-                        </button>
-                    )}
-                </div>
+            {/* FLOATING ACTION BUTTON - IMPOSSIBLE TO MISS */}
+            {adminMode && selectedSeats.length > 0 && (
+                <button
+                    className="apply-changes-btn-floating pulse-button"
+                    onClick={() => onPurchase(selectedSeats)}
+                    style={{
+                        position: 'fixed',
+                        top: '40px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 2000,
+                        background: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        padding: '20px 40px',
+                        borderRadius: '16px',
+                        fontWeight: '900',
+                        fontSize: '1.4rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 50px rgba(239, 68, 68, 0.8)',
+                        pointerEvents: 'all',
+                        animation: 'pulse 2s infinite'
+                    }}
+                >
+                    <RefreshCcw size={28} />
+                    REESTABLECER {selectedSeats.length} ASIENTOS
+                </button>
             )}
+
+            {/* FLOATING EXIT BUTTON FOR ADMIN */}
+            {adminMode && (
+                <button
+                    onClick={onBack}
+                    style={{
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        zIndex: 2001,
+                        background: 'rgba(0,0,0,0.8)',
+                        color: 'white',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <X size={18} />
+                    Cerrar Mapa
+                </button>
+            )}
+
             <div
                 ref={viewRef}
                 className="seat-map-view"
@@ -319,65 +299,11 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                         height: '100%'
                     }}
                 >
-                    {selectedEvent && selectedEvent.title.includes("EMC") ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center', alignItems: 'center', width: '100%', maxWidth: '800px', pointerEvents: 'auto' }}>
-                            {/* General Admission */}
-                            <div
-                                style={{
-                                    background: 'linear-gradient(90deg, #334155, #0f172a)',
-                                    border: '1px solid #334155',
-                                    borderRadius: '12px',
-                                    padding: '24px 40px',
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                    transition: 'transform 0.2s, border-color 0.2s',
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = '#3b82f6'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#334155'; }}
-                            >
-                                <div style={{ textAlign: 'left' }}>
-                                    <h3 style={{ color: '#3b82f6', fontSize: '1.5rem', marginBottom: '4px', margin: 0 }}>Admisión General</h3>
-                                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Acceso a todas las áreas generales del festival.</p>
-                                </div>
-                                <span style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>$3,200.00</span>
-                            </div>
-
-                            {/* VIP */}
-                            <div
-                                style={{
-                                    background: 'linear-gradient(90deg, #334155, #0f172a)',
-                                    border: '1px solid #4f46e5',
-                                    borderRadius: '12px',
-                                    padding: '24px 40px',
-                                    width: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                    transition: 'transform 0.2s, border-color 0.2s',
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = '#fbbf24'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#4f46e5'; }}
-                            >
-                                <div style={{ textAlign: 'left' }}>
-                                    <h3 style={{ color: '#fbbf24', fontSize: '1.5rem', marginBottom: '4px', margin: 0 }}>VIP Experience</h3>
-                                    <p style={{ color: '#e2e8f0', fontSize: '0.9rem', margin: 0 }}>Acceso preferencial, zonas exclusivas y baños privados.</p>
-                                </div>
-                                <span style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>$5,800.00</span>
-                            </div>
-                        </div>
-                    ) : (
-                        <SeatSvg
-                            ref={svgContainerRef}
-                            html={svgContent}
-                            onClick={handleSeatClick}
-                        />
-                    )}
+                    <SeatSvg
+                        ref={svgContainerRef}
+                        html={svgContent}
+                        onClick={handleSeatClick}
+                    />
                 </div>
             </div>
 
@@ -404,10 +330,6 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                                 <div className="ticket-body">
                                     <div className="ticket-info-row">
                                         <div className="ticket-info-item">
-                                            <span className="label">SECCIÓN</span>
-                                            <span className="value">AZU201</span>
-                                        </div>
-                                        <div className="ticket-info-item">
                                             <span className="label">FILA</span>
                                             <span className="value">{id.split('-')[1]}</span>
                                         </div>
@@ -417,10 +339,6 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                                         </div>
                                     </div>
                                     <div className="ticket-footer-row">
-                                        <span className="price" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4ade80' }}>
-                                            <img src={coinImage} alt="E" style={{ width: '16px', height: '16px' }} />
-                                            200
-                                        </span>
                                         <button
                                             className="delete-btn"
                                             onClick={(e) => {
@@ -436,31 +354,19 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent, onPurchase, so
                         ))
                     ) : (
                         <div className="empty-state">
-                            <p>No has seleccionado asientos</p>
-                            <span className="empty-hint">Selecciona asientos en el mapa para continuar</span>
+                            <p>{adminMode ? "Ningún asiento seleccionado para restaurar" : "No has seleccionado asientos"}</p>
+                            <span className="empty-hint">Toca los asientos para seleccionarlos</span>
                         </div>
                     )}
                 </div>
 
                 <div className="panel-footer">
-                    <div className="total-summary">
-                        <span className="ticket-icon">
-                            <Ticket size={24} />
-                            × {selectedSeats.length}
-                        </span>
-                        {!adminMode && (
-                            <span className="total-price" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80' }}>
-                                <img src={coinImage} alt="E" style={{ width: '24px', height: '24px' }} />
-                                {(selectedSeats.length * 200).toLocaleString()}
-                            </span>
-                        )}
-                    </div>
                     <button
                         className={adminMode ? "checkout-btn release-btn" : "checkout-btn"}
                         disabled={selectedSeats.length === 0}
                         onClick={() => onPurchase(selectedSeats)}
                     >
-                        {adminMode ? "Liberar Asientos" : "Comprar boletos"}
+                        {adminMode ? "RESTAURAR ASIENTOS" : "Comprar boletos"}
                     </button>
                 </div>
             </div>

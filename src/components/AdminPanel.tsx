@@ -45,7 +45,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [specificSeatsText, setSpecificSeatsText] = useState('');
 
     const [eventMapTarget, setEventMapTarget] = useState<any>(null);
-    const [adminSelectedSeats, setAdminSelectedSeats] = useState<string[]>([]);
 
     const renderDashboard = () => (
         <div className="tab-content">
@@ -217,19 +216,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             return (
                 <div style={{ height: 'calc(100vh - 120px)', width: '100%' }}>
                     <SeatMap
-                        onBack={() => {
-                            setEventMapTarget(null);
-                            setAdminSelectedSeats([]);
-                        }}
+                        onBack={() => setEventMapTarget(null)}
                         selectedEvent={eventMapTarget}
-                        onPurchase={(seats) => {
-                            if (confirm(`¿Liberar ${seats.length} asientos del evento ${eventMapTarget.title}?`)) {
+                        onPurchase={(seats: string[]) => {
+                            if (confirm(`¿Confirmas reactivar estos ${seats.length} asientos?`)) {
                                 onResetSpecificSeats(seats);
                                 setEventMapTarget(null);
-                                setAdminSelectedSeats([]);
                             }
                         }}
-                        onSelectionChange={setAdminSelectedSeats}
                         soldSeats={soldSeats}
                         adminMode={true}
                     />
@@ -237,8 +231,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             );
         }
 
-        // Let's create actual event objects for the map to work
-        // (In a real app, these would come from the database)
         const mockEvents = [
             { id: 1, title: "Tame Impala: Slow Rush Tour", location: "Auditorio Telmex, GDL", date: "Noviembre 17, 2026" },
             { id: 2, title: "Coachella: Desert Vibes", location: "Empire Polo Club, CA", date: "Abril 14, 2026" },
@@ -386,35 +378,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         {activeTab === 'events' && (eventMapTarget ? `Gestionando: ${eventMapTarget.title}` : 'Gestión por Evento')}
                         {activeTab === 'settings' && 'Mantenimiento Técnico'}
                     </h2>
-
-                    {activeTab === 'events' && eventMapTarget && adminSelectedSeats.length > 0 && (
-                        <button
-                            className="btn-danger"
-                            style={{
-                                padding: '10px 20px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                background: '#ef4444',
-                                border: 'none',
-                                color: 'white',
-                                borderRadius: '8px',
-                                fontWeight: '900',
-                                cursor: 'pointer',
-                                boxShadow: '0 0 20px rgba(239, 68, 68, 0.4)'
-                            }}
-                            onClick={() => {
-                                if (confirm(`¿Confirmas liberar ${adminSelectedSeats.length} asientos?`)) {
-                                    onResetSpecificSeats(adminSelectedSeats);
-                                    setEventMapTarget(null);
-                                    setAdminSelectedSeats([]);
-                                }
-                            }}
-                        >
-                            <RefreshCcw size={18} />
-                            APLICAR CAMBIOS ({adminSelectedSeats.length})
-                        </button>
-                    )}
                 </header>
 
                 {activeTab === 'dashboard' && renderDashboard()}
