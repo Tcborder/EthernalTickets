@@ -85,23 +85,58 @@ function AppContent() {
     return saved ? JSON.parse(saved) : ['admin@ethernal.com', 'tcborder020@gmail.com'];
   });
 
-  const isAdmin = user ? adminList.includes(user) : false;
+  const [isAdmin, setIsAdmin] = useState(false); // Changed to state variable
 
   const [etherionBalances, setEtherionBalances] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem('ethernal_all_balances');
     return saved ? JSON.parse(saved) : {};
   });
 
-  const etherionBalance = user ? (etherionBalances[user] ?? 1250) : 1250;
+  const [etherionBalance, setEtherionBalance] = useState(0); // Changed to state variable
 
-  const setEtherionBalance = (newBalance: number | ((prev: number) => number)) => {
+  useEffect(() => {
+    const checkUser = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+          const response = await fetch(`${API_URL}/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData.email);
+            setEtherionBalance(userData.balance);
+            setIsAdmin(userData.is_admin === 1 || userData.is_admin === true);
+          } else {
+            localStorage.removeItem('token');
+            setUser(null);
+            setIsAdmin(false);
+            setEtherionBalance(0);
+          }
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          localStorage.removeItem('token');
+          setUser(null);
+          setIsAdmin(false);
+          setEtherionBalance(0);
+        }
+      }
+    };
+    checkUser();
+  }, []);
+
+  // This function is now redundant as setEtherionBalance is a direct state setter
+  // Keeping it for now, but it might be removed if not used elsewhere with the old logic
+  const updateEtherionBalanceForUser = (newBalance: number | ((prev: number) => number)) => {
     if (!user) return;
     setEtherionBalances(prev => {
-      const currentBalance = prev[user] ?? 1250;
+      const currentBalance = prev[user] ?? 0; // Use 0 as default if not found
       const finalBalance = typeof newBalance === 'function' ? newBalance(currentBalance) : newBalance;
       return { ...prev, [user]: finalBalance };
     });
   };
+
 
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>(() => {
     const saved = localStorage.getItem('ethernal_tickets');
@@ -113,11 +148,8 @@ function AppContent() {
   });
 
   // Persist state to localStorage
-  useEffect(() => {
-    if (user) localStorage.setItem('ethernal_user', user);
-    else localStorage.removeItem('ethernal_user');
-  }, [user]);
-
+  // The 'ethernal_user' persistence is now handled by 'token' and 'user' in the new auth flow
+  // The 'ethernal_all_balances' might still be useful for admin view or if balances are managed client-side for other users
   useEffect(() => {
     localStorage.setItem('ethernal_all_balances', JSON.stringify(etherionBalances));
   }, [etherionBalances]);
@@ -140,9 +172,17 @@ function AppContent() {
       if (e.key === 'ethernal_admins' && e.newValue) {
         setAdminList(JSON.parse(e.newValue));
       }
-      if (e.key === 'ethernal_user') {
-        setUser(e.newValue);
+      if (e.key === 'token') { // Listen for token changes
+        const token = e.newValue;
+        if (!token) {
+          setUser(null);
+          setIsAdmin(false);
+          setEtherionBalance(0);
+        }
+        // A full re-check might be better here if token appears
+        // checkUser(); // This would re-fetch user data
       }
+      // The 'ethernal_user' key is no longer directly used for user state
       if (e.key === 'ethernal_all_balances' && e.newValue) {
         setEtherionBalances(JSON.parse(e.newValue));
       }
@@ -160,9 +200,12 @@ function AppContent() {
 
   const handleLogout = () => {
     setUser(null);
+    setIsAdmin(false);
     setShowUserMenu(false);
     setShowUserPortal(false);
-    localStorage.removeItem('ethernal_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user'); // For backward compatibility
+    navigate('/');
   };
 
   // Scroll to top when an event is selected
