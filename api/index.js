@@ -226,8 +226,32 @@ app.post('/api/admin/add-balance', authenticate, async (req, res) => {
         console.error("Balance update error:", error);
         res.status(500).json({ error: "Error de precisión: El número es demasiado grande" });
     }
-});
+}); app.post('/api/admin/change-password', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const { email, newPassword } = req.body;
 
+        if (!email || !newPassword) {
+            return res.status(400).json({ error: "Email y nueva contraseña son requeridos" });
+        }
+
+        const hash = await bcrypt.hash(newPassword, 10);
+        const result = await db.execute({
+            sql: "UPDATE users SET password_hash = ? WHERE email = ?",
+            args: [hash, email]
+        });
+
+        if (result.rowsAffected === 0) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        res.json({ success: true, message: `Contraseña de ${email} actualizada correctamente` });
+    } catch (error) {
+        console.error("Change password error:", error);
+        res.status(500).json({ error: "Error al actualizar la contraseña" });
+    }
+});
 app.post('/api/tickets/purchase', authenticate, async (req, res) => {
     try {
         await initDb();

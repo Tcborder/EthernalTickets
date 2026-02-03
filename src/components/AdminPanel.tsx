@@ -8,7 +8,8 @@ import {
     ArrowLeft,
     RefreshCcw,
     ShieldCheck,
-    Coins
+    Coins,
+    Key
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
 import SeatMap from './SeatMap';
@@ -24,6 +25,7 @@ interface AdminPanelProps {
     onAssignAdmin: (email: string) => void;
     onBack: () => void;
     adminList: string[];
+    onChangePassword: (email: string, newPass: string) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -35,7 +37,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onAddEtherionsByEmail,
     onAssignAdmin,
     onBack,
-    adminList
+    adminList,
+    onChangePassword
 }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'events' | 'settings'>('dashboard');
 
@@ -43,6 +46,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [etherionsEmail, setEtherionsEmail] = useState('');
     const [etherionsAmount, setEtherionsAmount] = useState('1000');
     const [newAdminEmail, setNewAdminEmail] = useState('');
+    const [changePasswordEmail, setChangePasswordEmail] = useState('');
+    const [newPassword, setNewPassword] = useState('');
     const [specificSeatsText, setSpecificSeatsText] = useState('');
 
     const [eventMapTarget, setEventMapTarget] = useState<any>(null);
@@ -152,6 +157,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             setNewAdminEmail('');
                         }}>
                             Asignar Rango Admin
+                        </button>
+                    </div>
+                </div>
+
+                <div className="content-card">
+                    <h3 className="card-title"><Key size={20} /> Cambiar Contraseña</h3>
+                    <div className="admin-form">
+                        <div className="form-group">
+                            <label>Correo del Usuario</label>
+                            <input
+                                type="email"
+                                placeholder="usuario@ejemplo.com"
+                                value={changePasswordEmail}
+                                onChange={(e) => setChangePasswordEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Nueva Contraseña</label>
+                            <input
+                                type="password"
+                                placeholder="********"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                        </div>
+                        <button className="btn-gray" onClick={() => {
+                            if (changePasswordEmail && newPassword) {
+                                onChangePassword(changePasswordEmail, newPassword);
+                                setChangePasswordEmail('');
+                                setNewPassword('');
+                            } else {
+                                alert("Por favor ingresa correo y contraseña");
+                            }
+                        }}>
+                            Actualizar Contraseña
                         </button>
                     </div>
                 </div>

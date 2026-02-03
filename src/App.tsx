@@ -261,6 +261,33 @@ function AppContent() {
     }
   };
 
+  const handleChangePassword = async (email: string, newPass: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+      const response = await fetch(`${API_URL}/admin/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, newPassword: newPass })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || "Contraseña actualizada");
+      } else {
+        alert(data.error || "Error al cambiar contraseña");
+      }
+    } catch (error) {
+      console.error("Error setting password:", error);
+      alert("Error de conexión");
+    }
+  };
+
   const handlePurchaseSeats = (seatIds: string[]) => {
     if (!user) {
       setShowAuthModal(true);
@@ -598,6 +625,7 @@ function AppContent() {
               onResetEvent={handleResetEvent}
               onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
               onAssignAdmin={handleAssignAdmin}
+              onChangePassword={handleChangePassword}
               adminList={adminList}
               onBack={() => {
                 navigate('/');
