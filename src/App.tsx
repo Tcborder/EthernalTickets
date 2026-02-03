@@ -559,13 +559,7 @@ function AppContent() {
               <span style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#ffffff' }}>Tickets</span>
             </a>
 
-            <nav className="nav-new">
-              {["Conciertos y Festivales", "Teatro y Cultura", "Deportes", "Familiares", "Especiales", "Ciudades"].map((item) => (
-                <a href="#" key={item} className="nav-link-new" onClick={(e) => e.preventDefault()}>
-                  {item}
-                </a>
-              ))}
-            </nav>
+
           </div>
 
           <div className="header-actions" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
