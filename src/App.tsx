@@ -81,11 +81,6 @@ function AppContent() {
   const [showUserPortal, setShowUserPortal] = useState(false);
   const showAdminPanel = location.pathname === '/adminpanel';
 
-  const [adminList, setAdminList] = useState<string[]>(() => {
-    const saved = localStorage.getItem('ethernal_admins');
-    return saved ? JSON.parse(saved) : ['admin@ethernal.com', 'tcborder020@gmail.com'];
-  });
-
   const [isAdmin, setIsAdmin] = useState(false); // Changed to state variable
 
   const [etherionBalances, setEtherionBalances] = useState<Record<string, number>>(() => {
@@ -178,16 +173,12 @@ function AppContent() {
 
   // Removed manual localStorage persistence for tickets/seats as we now use the DB
 
-  useEffect(() => {
-    localStorage.setItem('ethernal_admins', JSON.stringify(adminList));
-  }, [adminList]);
+  // Removed manual localStorage persistence for tickets/seats/admins as we now use the DB
 
   // Sync state across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'ethernal_admins' && e.newValue) {
-        setAdminList(JSON.parse(e.newValue));
-      }
+
       if (e.key === 'token') { // Listen for token changes
         const token = e.newValue;
         if (!token) {
@@ -295,9 +286,6 @@ function AppContent() {
 
       const data = await response.json();
       if (response.ok) {
-        if (!adminList.includes(email)) {
-          setAdminList(prev => [...prev, email]);
-        }
         // Refresh users list
         const API_URL_REFR = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
         fetch(`${API_URL_REFR}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } })
@@ -698,7 +686,7 @@ function AppContent() {
               onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
               onAssignAdmin={handleAssignAdmin}
               onChangePassword={handleChangePassword}
-              adminList={adminList}
+
               users={users}
               onBack={() => {
                 navigate('/');
