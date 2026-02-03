@@ -2,6 +2,7 @@ import React from 'react';
 import './UserPortal.css';
 import { Calendar, MapPin, Ticket, ArrowLeft, QrCode } from 'lucide-react';
 import coinImage from '../assets/etherion-coin.png';
+import { formatEtherions } from '../utils/formatters';
 
 const eventImages: Record<string, string> = {
     "Tame Impala: Slow Rush Tour": "/events/tame-impala.png",
@@ -47,7 +48,7 @@ const UserPortal: React.FC<UserPortalProps> = ({ user, onBack, tickets, balance 
                             <img src={coinImage} alt="E" style={{ width: '24px', height: '24px' }} />
                             <div>
                                 <div className="stat-label">Balance</div>
-                                <div className="stat-value etherions">{balance.toLocaleString()}</div>
+                                <div className="stat-value etherions">{formatEtherions(balance)}</div>
                             </div>
                         </div>
                         <div className="stat-card">

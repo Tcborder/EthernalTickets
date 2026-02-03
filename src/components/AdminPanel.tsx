@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
 import SeatMap from './SeatMap';
+import { formatEtherions, parseAbbreviatedNumber } from '../utils/formatters';
 
 interface AdminPanelProps {
     totalTickets: any[];
@@ -51,7 +52,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="stats-grid">
                 <div className="stat-box">
                     <span className="label">Ingresos Totales</span>
-                    <div className="value">{(totalTickets.length * 200).toLocaleString()} E.</div>
+                    <div className="value">{formatEtherions(totalTickets.length * 200)} E.</div>
                 </div>
                 <div className="stat-box">
                     <span className="label">Ventas</span>
@@ -111,16 +112,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label>Cantidad de Etherions</label>
+                            <label>Cantidad (Ej: 100K, 1M, 10B)</label>
                             <input
-                                type="number"
+                                type="text"
+                                placeholder="1000 or 1M"
                                 value={etherionsAmount}
                                 onChange={(e) => setEtherionsAmount(e.target.value)}
                             />
                         </div>
                         <button className="btn-gray" onClick={() => {
-                            onAddEtherionsByEmail(etherionsEmail, parseInt(etherionsAmount));
-                            setEtherionsEmail('');
+                            const numericAmount = parseAbbreviatedNumber(etherionsAmount);
+                            if (numericAmount > 0) {
+                                onAddEtherionsByEmail(etherionsEmail, numericAmount);
+                                setEtherionsEmail('');
+                                setEtherionsAmount('');
+                            } else {
+                                alert("Por favor ingresa una cantidad válida (ej: 1000, 1M, 10B)");
+                            }
                         }}>
                             Conceder Fondos
                         </button>

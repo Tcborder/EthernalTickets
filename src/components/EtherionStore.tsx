@@ -2,6 +2,7 @@ import React from 'react';
 import './EtherionStore.css';
 import coinImage from '../assets/etherion-coin.png';
 import { ArrowLeft } from 'lucide-react';
+import { formatEtherions } from '../utils/formatters';
 
 interface EtherionStoreProps {
     onBack: () => void;
@@ -82,7 +83,7 @@ const EtherionStore: React.FC<EtherionStoreProps> = ({ onBack, onBuy }) => {
                         </div>
 
                         <div className="etherion-amount">
-                            {offer.amount.toLocaleString()}
+                            {formatEtherions(offer.amount)}
                             <span className="etherion-label">ETHERIONS</span>
                         </div>
 

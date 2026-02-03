@@ -9,6 +9,7 @@ import UserPortal from './components/UserPortal';
 import AdminPanel from './components/AdminPanel';
 import ethernalLogo from './assets/Images/logoethernal.png';
 import coinImage from './assets/etherion-coin.png';
+import { formatEtherions } from './utils/formatters';
 import './App.css';
 
 interface Event {
@@ -448,7 +449,7 @@ function AppContent() {
               onClick={() => { setShowStore(true); setSelectedEvent(null); }}
             >
               <img src={coinImage} alt="Etherion" style={{ width: '24px', height: '24px' }} />
-              <span style={{ color: '#4ade80', fontWeight: '600' }}>{etherionBalance.toLocaleString()} Etherions</span>
+              <span style={{ color: '#4ade80', fontWeight: '600' }}>{formatEtherions(etherionBalance)} Etherions</span>
             </div>
             <div
               className="nav-link-new"
