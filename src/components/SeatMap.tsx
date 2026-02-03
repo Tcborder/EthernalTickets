@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ZoomIn, ZoomOut, Maximize, Loader2, Trash2, Ticket } from 'lucide-react';
 import './SeatMap.css';
+import coinImage from '../assets/etherion-coin.png';
 
 // We use ?raw to import the SVG string directly
 import auditoriumSvgRaw from '../assets/venueInfo/Auditorio Telmex/AuditorioTelmex.svg?raw';
@@ -355,7 +356,10 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent }) => {
                                         </div>
                                     </div>
                                     <div className="ticket-footer-row">
-                                        <span className="price">$1,388.75</span>
+                                        <span className="price" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4ade80' }}>
+                                            <img src={coinImage} alt="E" style={{ width: '16px', height: '16px' }} />
+                                            200
+                                        </span>
                                         <button
                                             className="delete-btn"
                                             onClick={(e) => {
@@ -383,8 +387,9 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, selectedEvent }) => {
                             <Ticket size={24} />
                             × {selectedSeats.length}
                         </span>
-                        <span className="total-price">
-                            ${(selectedSeats.length * 1388.75).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <span className="total-price" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ade80' }}>
+                            <img src={coinImage} alt="E" style={{ width: '24px', height: '24px' }} />
+                            {(selectedSeats.length * 200).toLocaleString()}
                         </span>
                     </div>
                     <button className="checkout-btn" disabled={selectedSeats.length === 0}>

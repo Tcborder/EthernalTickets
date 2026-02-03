@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Globe, Search, ChevronDown, User, ArrowRight, ArrowLeft, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SeatMap from './components/SeatMap';
 import EtherionStore from './components/EtherionStore';
@@ -70,6 +70,12 @@ function App() {
   const [showStore, setShowStore] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = () => {
+    setUser(null);
+    setShowUserMenu(false);
+  };
 
   // Scroll to top when an event is selected
   useEffect(() => {
@@ -203,11 +209,58 @@ function App() {
             </div>
             <div
               className="nav-link-new"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-              onClick={() => user ? null : setShowAuthModal(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', position: 'relative' }}
+              onClick={() => user ? setShowUserMenu(!showUserMenu) : setShowAuthModal(true)}
             >
               <User size={20} />
               <span>{user ? user.split('@')[0] : "Mi Cuenta"}</span>
+
+              {user && showUserMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '10px',
+                  background: '#171717',
+                  border: '1px solid #333',
+                  borderRadius: '12px',
+                  padding: '8px',
+                  minWidth: '150px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                  zIndex: 1000,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLogout();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#ef4444',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      width: '100%',
+                      textAlign: 'left',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <LogOut size={16} />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
