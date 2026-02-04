@@ -572,11 +572,11 @@ function AppContent() {
           <div className="header-actions" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
             <div
               className="nav-link-new"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '20px', border: '1px solid rgba(74, 222, 128, 0.2)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '20px', border: '1px solid rgba(167, 139, 250, 0.3)' }}
               onClick={() => { setShowStore(true); setSelectedEvent(null); }}
             >
               <img src={coinImage} alt="Etherion" style={{ width: '24px', height: '24px' }} />
-              <span style={{ color: '#4ade80', fontWeight: '600' }}>{formatEtherions(etherionBalance)} Etherions</span>
+              <span style={{ color: '#a78bfa', fontWeight: '600' }}>{formatEtherions(etherionBalance)} Etherions</span>
             </div>
             <div
               className="nav-link-new"
