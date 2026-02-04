@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import './SuccessModal.css';
 
 interface SuccessModalProps {
@@ -31,10 +31,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, message })
                         </div>
 
                         <div className="success-text">
-                            <div className="success-badge">
-                                <CheckCircle2 size={20} />
-                                <span>¡Éxito Total!</span>
-                            </div>
+
                             <h2>¡Compra Realizada!</h2>
                             <p>{message}</p>
                         </div>
