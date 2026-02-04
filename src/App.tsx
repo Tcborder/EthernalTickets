@@ -203,9 +203,6 @@ function AppContent() {
       if (e.key === 'ethernal_tickets' && e.newValue) {
         setPurchasedTickets(JSON.parse(e.newValue));
       }
-      if (e.key === 'ethernal_sold_seats' && e.newValue) {
-        setGloballySoldSeats(JSON.parse(e.newValue));
-      }
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -230,6 +227,7 @@ function AppContent() {
     if (selectedEvent) {
       window.scrollTo(0, 0);
       setShowStore(false);
+      setGloballySoldSeats([]); // Clear immediately before fetching new ones
 
       const fetchSoldSeatsForEvent = async () => {
         const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
