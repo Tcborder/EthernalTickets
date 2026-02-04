@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './AuthModal.css';
 import { X } from 'lucide-react';
-import etherionCoin from '../assets/etherion-coin.png';
+import ethernalLogo from '../assets/Images/logoethernal.png';
 
 interface AuthModalProps {
     onClose: () => void;
@@ -72,7 +72,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
                 </button>
 
                 <div className="auth-header">
-                    <img src={etherionCoin} alt="Logo" className="auth-logo" />
+                    <img src={ethernalLogo} alt="Logo" className="auth-logo" />
                     <h2 className="auth-title">
                         {isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
                     </h2>
