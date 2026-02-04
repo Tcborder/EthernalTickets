@@ -66,6 +66,7 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<HTMLDivElement>(null);
     const svgContainerRef = useRef<HTMLDivElement>(null);
+    const rafRef = useRef<number | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -92,8 +93,9 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
     const updateTransform = () => {
         if (contentRef.current) {
             const { x, y, scale } = transformRef.current;
-            contentRef.current.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+            contentRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
         }
+        rafRef.current = null;
     };
 
     useEffect(() => {
@@ -180,7 +182,10 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
             x: e.clientX - transformRef.current.x,
             y: e.clientY - transformRef.current.y
         };
-        if (contentRef.current) contentRef.current.style.transition = 'none';
+        if (contentRef.current) {
+            contentRef.current.style.transition = 'none';
+            contentRef.current.style.pointerEvents = 'none'; // Avoid hover updates during dragging
+        }
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
@@ -188,12 +193,19 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
             e.preventDefault();
             const newX = e.clientX - dragStartRef.current.x;
             const newY = e.clientY - dragStartRef.current.y;
-            if (Math.abs(newX - transformRef.current.x) > 3 || Math.abs(newY - transformRef.current.y) > 3) {
-                hasMovedRef.current = true;
+
+            if (!hasMovedRef.current) {
+                if (Math.abs(newX - transformRef.current.x) > 3 || Math.abs(newY - transformRef.current.y) > 3) {
+                    hasMovedRef.current = true;
+                }
             }
+
             transformRef.current.x = newX;
             transformRef.current.y = newY;
-            requestAnimationFrame(updateTransform);
+
+            if (rafRef.current === null) {
+                rafRef.current = requestAnimationFrame(updateTransform);
+            }
         }
     };
 
@@ -201,7 +213,14 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
         if (isDraggingRef.current) {
             isDraggingRef.current = false;
             setPosition({ x: transformRef.current.x, y: transformRef.current.y });
-            if (contentRef.current) contentRef.current.style.transition = 'transform 0.1s ease-out';
+            if (contentRef.current) {
+                contentRef.current.style.transition = 'transform 0.1s ease-out';
+                contentRef.current.style.pointerEvents = 'all';
+            }
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
+                rafRef.current = null;
+            }
         }
     };
 
@@ -258,14 +277,15 @@ const SeatMap: React.FC<SeatMapProps> = ({ onBack, onPurchase, soldSeats, onSele
                 <div
                     ref={contentRef}
                     style={{
-                        transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                        transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})`,
                         transformOrigin: 'center',
                         transition: isDraggingRef.current ? 'none' : 'transform 0.1s ease-out',
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                         width: '100%',
-                        height: '100%'
+                        height: '100%',
+                        willChange: 'transform'
                     }}
                 >
                     <SeatSvg
