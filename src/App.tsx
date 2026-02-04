@@ -952,8 +952,6 @@ function AppContent() {
                 </AnimatePresence>
               </div>
             </section>
-
-
           </>
         )}
       </main>
@@ -971,7 +969,6 @@ function AppContent() {
             <h3>Empresa</h3>
             <ul className="footer-links">
               <li><a href="#events" className="footer-link">Eventos</a></li>
-
               <li><a href="#contact" className="footer-link">Contacto</a></li>
             </ul>
           </div>
