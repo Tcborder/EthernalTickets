@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
 import { formatEtherions, parseAbbreviatedNumber } from '../utils/formatters';
+import coinImage from '../assets/etherion-coin.png';
 
 interface AdminPanelProps {
     totalTickets: any[];
@@ -59,7 +60,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="stats-grid">
                 <div className="stat-box">
                     <span className="label">Ingresos Totales</span>
-                    <div className="value">{formatEtherions(totalTickets.length * 200)} E.</div>
+                    <div className="value">
+                        {formatEtherions(totalTickets.length * 200)}
+                        <img src={coinImage} alt="Etherions" style={{ width: '0.8em', height: '0.8em', verticalAlign: 'middle', marginLeft: '8px', marginBottom: '4px' }} />
+                    </div>
                 </div>
                 <div className="stat-box">
                     <span className="label">Ventas</span>
@@ -382,7 +386,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                                                 <span style={{ color: '#94a3b8' }}>Ingresos</span>
-                                                <span style={{ color: 'white' }}>{formatEtherions(eventTickets.reduce((acc, t) => acc + (t.price || 0), 0))} E.</span>
+                                                <span style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    {formatEtherions(eventTickets.reduce((acc, t) => acc + (t.price || 0), 0))}
+                                                    <img src={coinImage} alt="Etherions" style={{ width: '14px', height: '14px' }} />
+                                                </span>
                                             </div>
                                         </div>
                                         <button
