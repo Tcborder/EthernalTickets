@@ -953,16 +953,7 @@ function AppContent() {
               </div>
             </section>
 
-            <section className="section" id="about" style={{ background: 'var(--color-bg-secondary)' }}>
-              <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-                <h2 className="section-title">Sobre <span className="gradient-text">Nosotros</span></h2>
-                <p className="hero-subtitle" style={{ fontSize: '1.1rem' }}>
-                  Somos la plataforma líder en venta de tickets para eventos exclusivos.
-                  Con un enfoque en la tecnología y la experiencia del usuario,
-                  conectamos a las personas con sus pasiones.
-                </p>
-              </div>
-            </section>
+
           </>
         )}
       </main>
@@ -980,7 +971,7 @@ function AppContent() {
             <h3>Empresa</h3>
             <ul className="footer-links">
               <li><a href="#events" className="footer-link">Eventos</a></li>
-              <li><a href="#about" className="footer-link">Portafolio</a></li>
+
               <li><a href="#contact" className="footer-link">Contacto</a></li>
             </ul>
           </div>
