@@ -130,16 +130,7 @@ function AppContent() {
         }
       }
 
-      // 3. Fetch Sold Seats (public)
-      try {
-        const sResponse = await fetch(`${API_URL}/tickets/sold`);
-        if (sResponse.ok) {
-          const seats = await sResponse.json();
-          setGloballySoldSeats(seats);
-        }
-      } catch (err) {
-        console.error("Error fetching sold seats:", err);
-      }
+
 
       // 4. Fetch All Users and All Tickets (if Admin)
       if (token) {
@@ -234,11 +225,27 @@ function AppContent() {
     navigate('/');
   };
 
-  // Scroll to top when an event is selected
+  // Scroll to top when an event is selected and fetch its sold seats
   useEffect(() => {
     if (selectedEvent) {
       window.scrollTo(0, 0);
-      setShowStore(false); // Close store if event is selected from somewhere else
+      setShowStore(false);
+
+      const fetchSoldSeatsForEvent = async () => {
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        try {
+          const response = await fetch(`${API_URL}/tickets/sold/${encodeURIComponent(selectedEvent.title)}`);
+          if (response.ok) {
+            const seats = await response.json();
+            setGloballySoldSeats(seats);
+          }
+        } catch (err) {
+          console.error("Error fetching event seats:", err);
+        }
+      };
+      fetchSoldSeatsForEvent();
+    } else {
+      setGloballySoldSeats([]); // Clear seats when no event is selected
     }
   }, [selectedEvent]);
 
