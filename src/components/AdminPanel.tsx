@@ -99,7 +99,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         try {
             const svgContent = await svgFile.text();
             const jsonText = await jsonFile.text();
-            const seatData = JSON.parse(jsonText);
+            const fullSeatData = JSON.parse(jsonText);
+
+            // Optimize: Send only necessary fields to avoid Vercel's 4.5MB payload limit
+            const seatData = fullSeatData.map((seat: any) => ({
+                id: seat.id,
+                section: seat.section,
+                row: seat.row,
+                number: seat.number,
+                x: seat.x,
+                y: seat.y,
+                type: seat.type
+            }));
 
             const response = await fetch(`${API_URL}/admin/venues`, {
                 method: 'POST',

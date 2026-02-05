@@ -31,7 +31,8 @@ const getTurso = () => {
 };
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Initialize Database Tables
 const initDb = async () => {
@@ -58,6 +59,30 @@ const initDb = async () => {
                 price REAL,
                 purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS venues (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                svg_content TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS venue_seats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                venue_id INTEGER,
+                seat_identifier TEXT NOT NULL,
+                section TEXT,
+                row_name TEXT,
+                seat_number TEXT,
+                x REAL,
+                y REAL,
+                type TEXT,
+                FOREIGN KEY(venue_id) REFERENCES venues(id) ON DELETE CASCADE
             )
         `);
     } catch (error) {
@@ -322,6 +347,116 @@ app.get('/api/admin/tickets', authenticate, isAdmin, async (req, res) => {
     } catch (error) {
         console.error("Admin list tickets error:", error);
         res.status(500).json({ error: "Error al obtener lista de boletos" });
+    }
+});
+
+// --- Venue Routes ---
+
+app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
+    const { name, svgContent, seatData } = req.body;
+
+    if (!name || !svgContent || !seatData) {
+        return res.status(400).json({ error: "Nombre, SVG y datos de asientos son requeridos" });
+    }
+
+    try {
+        await initDb();
+        const db = getTurso();
+
+        // 1. Create the venue
+        const venueResult = await db.execute({
+            sql: "INSERT INTO venues (name, svg_content) VALUES (?, ?) RETURNING id",
+            args: [name, svgContent]
+        });
+        const venueId = venueResult.rows[0].id;
+
+        // 2. Insert all seats
+        for (const seat of seatData) {
+            await db.execute({
+                sql: `INSERT INTO venue_seats 
+                     (venue_id, seat_identifier, section, row_name, seat_number, x, y, type) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                args: [
+                    venueId,
+                    seat.id,
+                    seat.section || 'General',
+                    seat.row || '',
+                    seat.number || seat.id,
+                    seat.x || 0,
+                    seat.y || 0,
+                    seat.type || 'regular'
+                ]
+            });
+        }
+
+        res.status(201).json({ success: true, venueId, message: "Venue registrado correctamente" });
+    } catch (error) {
+        console.error("Error creating venue:", error);
+        res.status(500).json({ error: "Error al registrar el venue" });
+    }
+});
+
+app.get('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const result = await db.execute("SELECT * FROM venues ORDER BY created_at DESC");
+        const venues = [];
+
+        for (const row of result.rows) {
+            const countRes = await db.execute({
+                sql: "SELECT COUNT(*) as count FROM venue_seats WHERE venue_id = ?",
+                args: [row.id]
+            });
+            venues.push({
+                ...row,
+                id: Number(row.id),
+                capacity: Number(countRes.rows[0].count)
+            });
+        }
+
+        res.json(venues);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener venues" });
+    }
+});
+
+app.get('/api/admin/venues/:id', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        const venueRes = await db.execute({
+            sql: "SELECT * FROM venues WHERE id = ?",
+            args: [req.params.id]
+        });
+
+        if (venueRes.rows.length === 0) return res.status(404).json({ error: "Venue no encontrado" });
+
+        const seatsRes = await db.execute({
+            sql: "SELECT * FROM venue_seats WHERE venue_id = ?",
+            args: [req.params.id]
+        });
+
+        res.json({
+            ...venueRes.rows[0],
+            seats: seatsRes.rows
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener detalles del venue" });
+    }
+});
+
+app.delete('/api/admin/venues/:id', authenticate, isAdmin, async (req, res) => {
+    try {
+        await initDb();
+        const db = getTurso();
+        await db.execute({
+            sql: "DELETE FROM venues WHERE id = ?",
+            args: [req.params.id]
+        });
+        res.json({ success: true, message: "Venue eliminado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al eliminar venue" });
     }
 });
 
