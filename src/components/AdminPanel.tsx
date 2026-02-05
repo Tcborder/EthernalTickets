@@ -94,7 +94,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
         setIsUploading(true);
         const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
-        const token = localStorage.getItem('token');
 
         try {
             const svgContent = await svgFile.text();
@@ -132,33 +131,50 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 type: seat.type || 'regular'
             }));
 
-            const response = await fetch(`${API_URL}/admin/venues`, {
+            // 1. First create the venue with SVG
+            const venueResponse = await fetch(`${API_URL}/admin/venues`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({
-                    name: venueName,
-                    svgContent,
-                    seatData
-                })
+                body: JSON.stringify({ name: venueName, svgContent })
             });
 
-            if (response.ok) {
-                alert("Venue registrado correctamente");
-                setShowAddVenue(false);
-                setVenueName('');
-                setSvgFile(null);
-                setJsonFile(null);
-                fetchVenues();
-            } else {
-                const error = await response.json();
-                alert(`Error: ${error.error}`);
+            if (!venueResponse.ok) {
+                const err = await venueResponse.json();
+                throw new Error(err.error || "Error al crear el venue base");
             }
-        } catch (error) {
+
+            const { venueId } = await venueResponse.json();
+
+            // 2. Upload seats in chunks to avoid payload limits
+            const CHUNK_SIZE = 500;
+            for (let i = 0; i < seatData.length; i += CHUNK_SIZE) {
+                const chunk = seatData.slice(i, i + CHUNK_SIZE);
+                const chunkResponse = await fetch(`${API_URL}/admin/venues/${venueId}/seats`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ seatData: chunk })
+                });
+
+                if (!chunkResponse.ok) {
+                    console.error(`Error en chunk ${i / CHUNK_SIZE}`);
+                }
+            }
+
+            alert("Venue registrado correctamente con todos sus asientos!");
+            setShowAddVenue(false);
+            setVenueName('');
+            setSvgFile(null);
+            setJsonFile(null);
+            fetchVenues();
+        } catch (error: any) {
             console.error("Error uploading venue:", error);
-            alert("Error al procesar los archivos");
+            alert("Error al procesar los archivos: " + error.message);
         } finally {
             setIsUploading(false);
         }

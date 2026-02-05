@@ -353,10 +353,10 @@ app.get('/api/admin/tickets', authenticate, isAdmin, async (req, res) => {
 // --- Venue Routes ---
 
 app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
-    const { name, svgContent, seatData } = req.body;
+    const { name, svgContent } = req.body;
 
-    if (!name || !svgContent || !seatData) {
-        return res.status(400).json({ error: "Nombre, SVG y datos de asientos son requeridos" });
+    if (!name || !svgContent) {
+        return res.status(400).json({ error: "Nombre y SVG son requeridos" });
     }
 
     try {
@@ -368,9 +368,28 @@ app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
             sql: "INSERT INTO venues (name, svg_content) VALUES (?, ?) RETURNING id",
             args: [name, svgContent]
         });
-        const venueId = venueResult.rows[0].id;
+        const venueId = Number(venueResult.rows[0].id);
 
-        // 2. Insert all seats
+        res.status(201).json({ success: true, venueId, message: "Venue base creado" });
+    } catch (error) {
+        console.error("Error creating venue:", error);
+        res.status(500).json({ error: "Error al registrar el venue" });
+    }
+});
+
+app.post('/api/admin/venues/:id/seats', authenticate, isAdmin, async (req, res) => {
+    const { seatData } = req.body;
+    const venueId = req.params.id;
+
+    if (!seatData || !Array.isArray(seatData)) {
+        return res.status(400).json({ error: "Datos de asientos inválidos" });
+    }
+
+    try {
+        await initDb(); // Ensure DB is initialized for this new endpoint
+        const db = getTurso();
+
+        // Batch insert seats
         for (const seat of seatData) {
             await db.execute({
                 sql: `INSERT INTO venue_seats 
@@ -389,10 +408,10 @@ app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
             });
         }
 
-        res.status(201).json({ success: true, venueId, message: "Venue registrado correctamente" });
+        res.json({ success: true, message: `${seatData.length} asientos agregados` });
     } catch (error) {
-        console.error("Error creating venue:", error);
-        res.status(500).json({ error: "Error al registrar el venue" });
+        console.error("Error adding seats:", error);
+        res.status(500).json({ error: "Error al agregar asientos" });
     }
 });
 
