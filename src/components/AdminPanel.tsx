@@ -101,25 +101,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             const jsonText = await jsonFile.text();
             const parsedData = JSON.parse(jsonText);
 
-            // Determine where the seat array is (can be directly the array or inside a 'seats' property)
-            let rawSeats = Array.isArray(parsedData) ? parsedData : (parsedData.seats || []);
+            // Support the "elements" structure from the export
+            let rawElements = Array.isArray(parsedData) ? parsedData : (parsedData.elements || parsedData.seats || []);
 
-            if (rawSeats.length === 0) {
-                console.error("No se encontraron asientos en el JSON. Estructura recibida:", parsedData);
-                alert("El archivo JSON no tiene el formato esperado (debe ser un array de asientos o un objeto con una propiedad 'seats')");
+            // Filter only elements that are actually seats/clickable
+            const interactiveElements = rawElements.filter((el: any) =>
+                el.type === 'seat' || el.interaction?.clickable === true
+            );
+
+            if (interactiveElements.length === 0 && rawElements.length > 0) {
+                console.warn("No se encontraron elementos interactivos (clickable: true). Intentando usar todos los elementos como asientos.");
+            }
+
+            const activeSeats = interactiveElements.length > 0 ? interactiveElements : rawElements;
+
+            if (activeSeats.length === 0) {
+                alert("El archivo JSON no tiene el formato esperado o no contiene elementos.");
                 setIsUploading(false);
                 return;
             }
 
             // Optimize: Send only necessary fields to avoid Vercel's 4.5MB payload limit
-            const seatData = rawSeats.map((seat: any) => ({
+            const seatData = activeSeats.map((seat: any) => ({
                 id: seat.id || seat.identifier,
-                section: seat.section,
-                row: seat.row,
-                number: seat.number,
-                x: seat.x,
-                y: seat.y,
-                type: seat.type
+                section: seat.section || 'General',
+                row: seat.row || (seat.id ? seat.id.split('-')[3] : ''),
+                number: seat.number || (seat.id ? seat.id.split('-').pop() : ''),
+                x: seat.svgX || seat.x || 0,
+                y: seat.svgY || seat.y || 0,
+                type: seat.type || 'regular'
             }));
 
             const response = await fetch(`${API_URL}/admin/venues`, {
