@@ -142,8 +142,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             });
 
             if (!venueResponse.ok) {
-                const err = await venueResponse.json();
-                throw new Error(err.error || "Error al crear el venue base");
+                const errorText = await venueResponse.text();
+                let errorMessage = "Error al crear el venue base";
+                try {
+                    const err = JSON.parse(errorText);
+                    errorMessage = err.error || errorMessage;
+                } catch (e) {
+                    errorMessage = errorText || `Error ${venueResponse.status}: ${venueResponse.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
 
             const { venueId } = await venueResponse.json();
