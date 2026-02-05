@@ -5,13 +5,18 @@ import {
     LayoutDashboard,
     Users,
     Ticket,
-    Settings,
     ArrowLeft,
     ShieldCheck,
     Coins,
     Key,
     Eye,
-    Search as SearchIcon
+    Search as SearchIcon,
+    MapPin,
+    Upload,
+    Trash2,
+    Plus,
+    FileJson,
+    Shapes
 } from 'lucide-react';
 import ethernalLogo from '../assets/Images/logoethernal.png';
 import { formatEtherions, parseAbbreviatedNumber } from '../utils/formatters';
@@ -20,7 +25,6 @@ import coinImage from '../assets/etherion-coin.png';
 interface AdminPanelProps {
     totalTickets: any[];
     soldSeats: string[];
-    onResetSeats: () => void;
     onResetSpecificSeats: (seatIds: string[]) => void;
     onAddEtherionsByEmail: (email: string, amount: number) => void;
     onAssignAdmin: (email: string) => void;
@@ -34,7 +38,6 @@ interface AdminPanelProps {
 const AdminPanel: React.FC<AdminPanelProps> = ({
     totalTickets,
     soldSeats,
-    onResetSeats,
     onResetSpecificSeats,
     onAddEtherionsByEmail,
     onAssignAdmin,
@@ -44,7 +47,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onChangePassword,
     events
 }) => {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'settings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'tickets' | 'venues'>('dashboard');
 
     // Form states
     const [etherionsEmail, setEtherionsEmail] = useState('');
@@ -54,6 +57,100 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [changePasswordEmail, setChangePasswordEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [venues, setVenues] = useState<any[]>([]);
+    const [showAddVenue, setShowAddVenue] = useState(false);
+    const [venueName, setVenueName] = useState('');
+    const [svgFile, setSvgFile] = useState<File | null>(null);
+    const [jsonFile, setJsonFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const fetchVenues = async () => {
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`${API_URL}/admin/venues`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setVenues(data);
+            }
+        } catch (error) {
+            console.error("Error fetching venues:", error);
+        }
+    };
+
+    React.useEffect(() => {
+        if (activeTab === 'venues') {
+            fetchVenues();
+        }
+    }, [activeTab]);
+
+    const handleUploadVenue = async () => {
+        if (!venueName || !svgFile || !jsonFile) {
+            alert("Por favor completa todos los campos y selecciona ambos archivos");
+            return;
+        }
+
+        setIsUploading(true);
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        const token = localStorage.getItem('token');
+
+        try {
+            const svgContent = await svgFile.text();
+            const jsonText = await jsonFile.text();
+            const seatData = JSON.parse(jsonText);
+
+            const response = await fetch(`${API_URL}/admin/venues`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: venueName,
+                    svgContent,
+                    seatData
+                })
+            });
+
+            if (response.ok) {
+                alert("Venue registrado correctamente");
+                setShowAddVenue(false);
+                setVenueName('');
+                setSvgFile(null);
+                setJsonFile(null);
+                fetchVenues();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.error}`);
+            }
+        } catch (error) {
+            console.error("Error uploading venue:", error);
+            alert("Error al procesar los archivos");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDeleteVenue = async (id: number) => {
+        if (!window.confirm("¿Estás seguro de eliminar este venue? Se borrarán todos los asientos asociados.")) return;
+
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(`${API_URL}/admin/venues/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                fetchVenues();
+            }
+        } catch (error) {
+            console.error("Error deleting venue:", error);
+        }
+    };
 
     const renderDashboard = () => (
         <div className="tab-content">
@@ -423,25 +520,125 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
 
 
-    const renderSettings = () => (
+    const renderVenues = () => (
         <div className="tab-content">
-            <div className="content-card">
-                <h3 className="card-title"><Settings size={20} /> Opciones Críticas</h3>
-                <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Estas acciones borrarán datos permanentes del sistema.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h3 className="card-title" style={{ margin: 0 }}><MapPin size={24} /> Gestión de Venues</h3>
+                <button className="btn-gray" onClick={() => setShowAddVenue(!showAddVenue)}>
+                    {showAddVenue ? 'Cancelar' : <><Plus size={18} /> Nuevo Venue</>}
+                </button>
+            </div>
 
-                <div className="admin-form">
-                    <div className="form-group">
-                        <label>Limpieza General</label>
-                        <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Revoca todos los boletos y libera todos los asientos del mapa.</p>
+            {showAddVenue && (
+                <div className="content-card" style={{ marginBottom: '24px', animation: 'slideDown 0.3s ease-out' }}>
+                    <h3 className="card-title">Registrar Nuevo Recinto</h3>
+                    <div className="admin-form" style={{ maxWidth: '600px' }}>
+                        <div className="form-group">
+                            <label>Nombre del Venue</label>
+                            <input
+                                type="text"
+                                placeholder="Ej: Teatro Gran Ethernal"
+                                value={venueName}
+                                onChange={(e) => setVenueName(e.target.value)}
+                            />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                            <div className="form-group">
+                                <label>Mapa SVG (Diseño)</label>
+                                <div className="file-upload-box" onClick={() => document.getElementById('svg-input')?.click()}>
+                                    <Shapes size={24} color={svgFile ? '#4ade80' : '#94a3b8'} />
+                                    <span>{svgFile ? svgFile.name : 'Seleccionar SVG'}</span>
+                                    <input
+                                        id="svg-input"
+                                        type="file"
+                                        accept=".svg"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => setSvgFile(e.target.files?.[0] || null)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Data JSON (Asientos)</label>
+                                <div className="file-upload-box" onClick={() => document.getElementById('json-input')?.click()}>
+                                    <FileJson size={24} color={jsonFile ? '#4ade80' : '#94a3b8'} />
+                                    <span>{jsonFile ? jsonFile.name : 'Seleccionar JSON'}</span>
+                                    <input
+                                        id="json-input"
+                                        type="file"
+                                        accept=".json"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => setJsonFile(e.target.files?.[0] || null)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            className="btn-gray"
+                            style={{ width: '100%', background: '#3b82f6' }}
+                            onClick={handleUploadVenue}
+                            disabled={isUploading}
+                        >
+                            {isUploading ? 'Procesando...' : <><Upload size={18} /> Cargar Venue al Sistema</>}
+                        </button>
                     </div>
-                    <button className="btn-danger" onClick={() => {
-                        if (window.confirm("¿Estás SEGURO de que quieres borrar TODOS los boletos vendiddos? Esta acción no se puede deshacer.")) {
-                            onResetSeats();
-                        }
-                    }}>
-                        Resetear Todo el Sistema de Tickets
-                    </button>
                 </div>
+            )}
+
+            <div className="venues-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '24px'
+            }}>
+                {venues.map(venue => (
+                    <div key={venue.id} className="content-card" style={{ padding: '20px', position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                            <div>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: 'white' }}>{venue.name}</h4>
+                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>ID: VENUE-{venue.id}</span>
+                            </div>
+                            <button
+                                className="btn-danger-outline"
+                                style={{ padding: '8px' }}
+                                onClick={() => handleDeleteVenue(venue.id)}
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
+                                <span style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Capacidad</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>{venue.capacity}</span>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
+                                <span style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Asientos</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#4ade80' }}>MAP LISTO</span>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            height: '100px',
+                            background: 'rgba(255,255,255,0.02)',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '1px dashed rgba(255,255,255,0.1)'
+                        }}>
+                            <div dangerouslySetInnerHTML={{ __html: venue.svg_content }} style={{ width: '100%', height: '100%', padding: '10px', opacity: 0.5, pointerEvents: 'none' }} />
+                        </div>
+                    </div>
+                ))}
+
+                {venues.length === 0 && !showAddVenue && (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: '#64748b' }}>
+                        <MapPin size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
+                        <p>No hay venues registrados todavía.</p>
+                        <button className="btn-gray" style={{ marginTop: '16px' }} onClick={() => setShowAddVenue(true)}>
+                            Registrar mi primer Venue
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -476,10 +673,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         </button>
 
                         <button
-                            className={activeTab === 'settings' ? 'active' : ''}
-                            onClick={() => setActiveTab('settings')}
+                            className={activeTab === 'venues' ? 'active' : ''}
+                            onClick={() => setActiveTab('venues')}
                         >
-                            <Settings size={20} /> Configuración
+                            <MapPin size={20} /> Venues
                         </button>
                     </nav>
 
@@ -501,7 +698,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     {activeTab === 'users' && renderUsers()}
                     {activeTab === 'tickets' && renderTickets()}
 
-                    {activeTab === 'settings' && renderSettings()}
+                    {activeTab === 'venues' && renderVenues()}
                 </main>
             </div>
         </div>

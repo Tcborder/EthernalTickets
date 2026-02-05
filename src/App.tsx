@@ -404,27 +404,6 @@ function AppContent() {
     }
   };
 
-  const handleResetSeats = async () => {
-    const token = localStorage.getItem('token');
-    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
-
-    try {
-      const response = await fetch(`${API_URL}/admin/tickets/reset`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        setGloballySoldSeats([]);
-        setPurchasedTickets([]);
-        alert("Mapa de asientos reseteado con éxito.");
-      } else {
-        alert("Error al resetear el sistema");
-      }
-    } catch (error) {
-      console.error("Reset error:", error);
-    }
-  };
 
   const handleResetSpecificSeats = async (seatIds: string[]) => {
     const token = localStorage.getItem('token');
@@ -725,7 +704,6 @@ function AppContent() {
             <AdminPanel
               totalTickets={purchasedTickets}
               soldSeats={globallySoldSeats}
-              onResetSeats={handleResetSeats}
               onResetSpecificSeats={handleResetSpecificSeats}
               onAddEtherionsByEmail={(email, amount) => handleBuyEtherions(amount, email)}
               onAssignAdmin={(email) => handleSetAdminStatus(email, true)}

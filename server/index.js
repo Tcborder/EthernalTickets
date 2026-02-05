@@ -41,6 +41,30 @@ const initDb = async () => {
             )
         `);
 
+        await turso.execute(`
+            CREATE TABLE IF NOT EXISTS venues (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                svg_content TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await turso.execute(`
+            CREATE TABLE IF NOT EXISTS venue_seats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                venue_id INTEGER,
+                seat_identifier TEXT NOT NULL,
+                section TEXT,
+                row_name TEXT,
+                seat_number TEXT,
+                x REAL,
+                y REAL,
+                type TEXT,
+                FOREIGN KEY(venue_id) REFERENCES venues(id) ON DELETE CASCADE
+            )
+        `);
+
         console.log("Database tables verified/created.");
     } catch (error) {
         console.error("Error initializing database:", error);
@@ -252,6 +276,109 @@ app.post('/api/admin/change-password', authenticate, isAdmin, async (req, res) =
         res.json({ success: true, message: "Contraseña actualizada" });
     } catch (error) {
         res.status(500).json({ error: "Error al actualizar contraseña" });
+    }
+});
+
+// --- Venue Routes ---
+
+app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
+    const { name, svgContent, seatData } = req.body;
+
+    if (!name || !svgContent || !seatData) {
+        return res.status(400).json({ error: "Nombre, SVG y datos de asientos son requeridos" });
+    }
+
+    try {
+        // 1. Create the venue
+        const venueResult = await turso.execute({
+            sql: "INSERT INTO venues (name, svg_content) VALUES (?, ?) RETURNING id",
+            args: [name, svgContent]
+        });
+        const venueId = venueResult.rows[0].id;
+
+        // 2. Insert all seats
+        // Note: Using a transaction or multiple inserts if too many
+        for (const seat of seatData) {
+            await turso.execute({
+                sql: `INSERT INTO venue_seats 
+                     (venue_id, seat_identifier, section, row_name, seat_number, x, y, type) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                args: [
+                    venueId,
+                    seat.id,
+                    seat.section || 'General',
+                    seat.row || '',
+                    seat.number || seat.id,
+                    seat.x || 0,
+                    seat.y || 0,
+                    seat.type || 'regular'
+                ]
+            });
+        }
+
+        res.status(201).json({ success: true, venueId, message: "Venue registrado correctamente" });
+    } catch (error) {
+        console.error("Error creating venue:", error);
+        res.status(500).json({ error: "Error al registrar el venue" });
+    }
+});
+
+app.get('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
+    try {
+        const result = await turso.execute("SELECT * FROM venues ORDER BY created_at DESC");
+        const venues = [];
+
+        for (const row of result.rows) {
+            // Count seats for each venue
+            const countRes = await turso.execute({
+                sql: "SELECT COUNT(*) as count FROM venue_seats WHERE venue_id = ?",
+                args: [row.id]
+            });
+            venues.push({
+                ...row,
+                id: Number(row.id),
+                capacity: Number(countRes.rows[0].count)
+            });
+        }
+
+        res.json(venues);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener venues" });
+    }
+});
+
+app.get('/api/admin/venues/:id', authenticate, isAdmin, async (req, res) => {
+    try {
+        const venueRes = await turso.execute({
+            sql: "SELECT * FROM venues WHERE id = ?",
+            args: [req.params.id]
+        });
+
+        if (venueRes.rows.length === 0) return res.status(404).json({ error: "Venue no encontrado" });
+
+        const seatsRes = await turso.execute({
+            sql: "SELECT * FROM venue_seats WHERE venue_id = ?",
+            args: [req.params.id]
+        });
+
+        res.json({
+            ...venueRes.rows[0],
+            seats: seatsRes.rows
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener detalles del venue" });
+    }
+});
+
+app.delete('/api/admin/venues/:id', authenticate, isAdmin, async (req, res) => {
+    try {
+        await turso.execute({
+            sql: "DELETE FROM venues WHERE id = ?",
+            args: [req.params.id]
+        });
+        res.json({ success: true, message: "Venue eliminado" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al eliminar venue" });
     }
 });
 

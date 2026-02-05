@@ -344,7 +344,8 @@
 
     .admin-logo span,
     .admin-nav button span {
-        display: none; // Assuming there is text inside a span, if closely following structure
+        display: none;
+        /* Assuming there is text inside a span */
     }
 
     .admin-nav button {
@@ -355,4 +356,50 @@
     .back-btn span {
         display: none;
     }
+}
+
+/* Venues Tab Styles */
+.file-upload-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.file-upload-box:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #3b82f6;
+}
+
+.file-upload-box span {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.venues-grid {
+    animation: fadeIn 0.5s ease-out;
 }
