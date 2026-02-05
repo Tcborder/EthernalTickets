@@ -285,27 +285,77 @@ app.post('/api/admin/change-password', authenticate, isAdmin, async (req, res) =
 app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
     const { name, svgContent, seatData } = req.body;
 
-    if (!name || !svgContent || !seatData) {
-        return res.status(400).json({ error: "Nombre, SVG y datos de asientos son requeridos" });
+    if (!name) {
+        return res.status(400).json({ error: "Nombre del venue es requerido" });
     }
 
     try {
-        // 1. Create the venue
+        // 1. Create the venue (svgContent can be empty initially for chunked upload)
         const venueResult = await turso.execute({
             sql: "INSERT INTO venues (name, svg_content) VALUES (?, ?) RETURNING id",
-            args: [name, svgContent]
+            args: [name, svgContent || ""]
         });
         const venueId = venueResult.rows[0].id;
 
-        // 2. Insert all seats
-        // Note: Using a transaction or multiple inserts if too many
+        // 2. Insert seats if provided (legacy/small payload mode)
+        if (seatData && Array.isArray(seatData) && seatData.length > 0) {
+            for (const seat of seatData) {
+                await turso.execute({
+                    sql: `INSERT INTO venue_seats 
+                     (venue_id, seat_identifier, section, row_name, seat_number, x, y, type) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    args: [
+                        venueId,
+                        seat.id,
+                        seat.section || 'General',
+                        seat.row || '',
+                        seat.number || seat.id,
+                        seat.x || 0,
+                        seat.y || 0,
+                        seat.type || 'regular'
+                    ]
+                });
+            }
+        }
+
+        res.status(201).json({ success: true, venueId, message: "Venue registrado correctamente" });
+    } catch (error) {
+        console.error("Error creating venue:", error);
+        res.status(500).json({ error: "Error al registrar el venue" });
+    }
+});
+
+app.post('/api/admin/venues/:id/svg-chunk', authenticate, isAdmin, async (req, res) => {
+    const { chunk } = req.body;
+    if (!chunk) return res.status(400).json({ error: "Chunk invalido" });
+
+    try {
+        await turso.execute({
+            sql: "UPDATE venues SET svg_content = svg_content || ? WHERE id = ?",
+            args: [chunk, req.params.id]
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error appending SVG chunk:", error);
+        res.status(500).json({ error: "Error al subir parte del SVG" });
+    }
+});
+
+app.post('/api/admin/venues/:id/seats', authenticate, isAdmin, async (req, res) => {
+    const { seatData } = req.body;
+    if (!seatData || !Array.isArray(seatData)) {
+        return res.status(400).json({ error: "Datos de asientos requeridos" });
+    }
+
+    try {
+        // Using a transaction implicitly by awaiting sequentially or we could optimize
         for (const seat of seatData) {
             await turso.execute({
                 sql: `INSERT INTO venue_seats 
                      (venue_id, seat_identifier, section, row_name, seat_number, x, y, type) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 args: [
-                    venueId,
+                    req.params.id,
                     seat.id,
                     seat.section || 'General',
                     seat.row || '',
@@ -316,11 +366,10 @@ app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
                 ]
             });
         }
-
-        res.status(201).json({ success: true, venueId, message: "Venue registrado correctamente" });
+        res.json({ success: true, message: "Asientos agregados" });
     } catch (error) {
-        console.error("Error creating venue:", error);
-        res.status(500).json({ error: "Error al registrar el venue" });
+        console.error("Error adding seats:", error);
+        res.status(500).json({ error: "Error al guardar asientos" });
     }
 });
 

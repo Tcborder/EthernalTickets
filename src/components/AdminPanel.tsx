@@ -131,14 +131,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 type: seat.type || 'regular'
             }));
 
-            // 1. First create the venue with SVG
+            // 1. Create the venue (sending empty SVG first to get ID)
             const venueResponse = await fetch(`${API_URL}/admin/venues`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({ name: venueName, svgContent })
+                body: JSON.stringify({ name: venueName, svgContent: "" })
             });
 
             if (!venueResponse.ok) {
@@ -155,7 +155,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
             const { venueId } = await venueResponse.json();
 
-            // 2. Upload seats in chunks to avoid payload limits
+            // 2. Upload SVG in chunks (1MB chunks)
+            const SVG_CHUNK_SIZE = 1024 * 1024; // 1MB
+            const totalSvgChunks = Math.ceil(svgContent.length / SVG_CHUNK_SIZE);
+            for (let i = 0; i < totalSvgChunks; i++) {
+                const start = i * SVG_CHUNK_SIZE;
+                const end = start + SVG_CHUNK_SIZE;
+                const chunk = svgContent.substring(start, end);
+
+                const svgChunkResponse = await fetch(`${API_URL}/admin/venues/${venueId}/svg-chunk`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ chunk })
+                });
+
+                if (!svgChunkResponse.ok) {
+                    throw new Error(`Error subiendo chunk ${i + 1} del SVG`);
+                }
+            }
+
+            // 3. Upload seats in chunks to avoid payload limits
             const CHUNK_SIZE = 500;
             for (let i = 0; i < seatData.length; i += CHUNK_SIZE) {
                 const chunk = seatData.slice(i, i + CHUNK_SIZE);
