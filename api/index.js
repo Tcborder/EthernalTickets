@@ -353,27 +353,66 @@ app.get('/api/admin/tickets', authenticate, isAdmin, async (req, res) => {
 // --- Venue Routes ---
 
 app.post('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
-    const { name, svgContent } = req.body;
+    const { name, svgContent, seatData } = req.body;
 
-    if (!name || !svgContent) {
-        return res.status(400).json({ error: "Nombre y SVG son requeridos" });
+    if (!name) {
+        return res.status(400).json({ error: "Nombre del venue es requerido" });
     }
 
     try {
         await initDb();
         const db = getTurso();
 
-        // 1. Create the venue
+        // 1. Create the venue (svgContent can be empty initially for chunked upload)
         const venueResult = await db.execute({
             sql: "INSERT INTO venues (name, svg_content) VALUES (?, ?) RETURNING id",
-            args: [name, svgContent]
+            args: [name, svgContent || ""]
         });
         const venueId = Number(venueResult.rows[0].id);
 
-        res.status(201).json({ success: true, venueId, message: "Venue base creado" });
+        // 2. Insert seats if provided (legacy/small payload mode)
+        if (seatData && Array.isArray(seatData) && seatData.length > 0) {
+            for (const seat of seatData) {
+                await db.execute({
+                    sql: `INSERT INTO venue_seats 
+                     (venue_id, seat_identifier, section, row_name, seat_number, x, y, type) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    args: [
+                        venueId,
+                        seat.id,
+                        seat.section || 'General',
+                        seat.row || '',
+                        seat.number || seat.id,
+                        seat.x || 0,
+                        seat.y || 0,
+                        seat.type || 'regular'
+                    ]
+                });
+            }
+        }
+
+        res.status(201).json({ success: true, venueId, message: "Venue registrado correctamente" });
     } catch (error) {
         console.error("Error creating venue:", error);
         res.status(500).json({ error: "Error al registrar el venue" });
+    }
+});
+
+app.post('/api/admin/venues/:id/svg-chunk', authenticate, isAdmin, async (req, res) => {
+    const { chunk } = req.body;
+    if (!chunk) return res.status(400).json({ error: "Chunk invalido" });
+
+    try {
+        await initDb();
+        const db = getTurso();
+        await db.execute({
+            sql: "UPDATE venues SET svg_content = svg_content || ? WHERE id = ?",
+            args: [chunk, req.params.id]
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error appending SVG chunk:", error);
+        res.status(500).json({ error: "Error al subir parte del SVG" });
     }
 });
 
@@ -419,7 +458,7 @@ app.get('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
     try {
         await initDb();
         const db = getTurso();
-        const result = await db.execute("SELECT * FROM venues ORDER BY created_at DESC");
+        const result = await db.execute("SELECT id, name, created_at FROM venues ORDER BY created_at DESC");
         const venues = [];
 
         for (const row of result.rows) {
@@ -430,7 +469,8 @@ app.get('/api/admin/venues', authenticate, isAdmin, async (req, res) => {
             venues.push({
                 ...row,
                 id: Number(row.id),
-                capacity: Number(countRes.rows[0].count)
+                capacity: Number(countRes.rows[0].count),
+                // svg_content omitted for list view to save bandwidth
             });
         }
 

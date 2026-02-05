@@ -701,7 +701,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             justifyContent: 'center',
                             border: '1px dashed rgba(255,255,255,0.1)'
                         }}>
-                            <div dangerouslySetInnerHTML={{ __html: venue.svg_content }} style={{ width: '100%', height: '100%', padding: '10px', opacity: 0.5, pointerEvents: 'none' }} />
+                            {venue.svg_content ? (
+                                <div dangerouslySetInnerHTML={{ __html: venue.svg_content }} style={{ width: '100%', height: '100%', padding: '10px', opacity: 0.5, pointerEvents: 'none' }} />
+                            ) : (
+                                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Vista previa no disponible</span>
+                            )}
                         </div>
                     </div>
                 ))}
