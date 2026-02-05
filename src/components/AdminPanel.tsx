@@ -99,11 +99,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         try {
             const svgContent = await svgFile.text();
             const jsonText = await jsonFile.text();
-            const fullSeatData = JSON.parse(jsonText);
+            const parsedData = JSON.parse(jsonText);
+
+            // Determine where the seat array is (can be directly the array or inside a 'seats' property)
+            let rawSeats = Array.isArray(parsedData) ? parsedData : (parsedData.seats || []);
+
+            if (rawSeats.length === 0) {
+                console.error("No se encontraron asientos en el JSON. Estructura recibida:", parsedData);
+                alert("El archivo JSON no tiene el formato esperado (debe ser un array de asientos o un objeto con una propiedad 'seats')");
+                setIsUploading(false);
+                return;
+            }
 
             // Optimize: Send only necessary fields to avoid Vercel's 4.5MB payload limit
-            const seatData = fullSeatData.map((seat: any) => ({
-                id: seat.id,
+            const seatData = rawSeats.map((seat: any) => ({
+                id: seat.id || seat.identifier,
                 section: seat.section,
                 row: seat.row,
                 number: seat.number,
