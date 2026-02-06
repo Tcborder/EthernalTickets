@@ -8,10 +8,12 @@ import AuthModal from './components/AuthModal';
 import UserPortal from './components/UserPortal';
 import AdminPanel from './components/AdminPanel';
 import SuccessModal from './components/SuccessModal';
+import ConcertsPage from './components/ConcertsPage'; // Import ConcertsPage
 import ethernalLogo from './assets/Images/logoethernal.png';
 import coinImage from './assets/etherion-coin.png';
 import { formatEtherions } from './utils/formatters';
 import './App.css';
+
 
 interface Event {
   id: number;
@@ -53,6 +55,7 @@ const events: Event[] = [
   }
 ];
 
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,6 +78,7 @@ function AppContent() {
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showStore, setShowStore] = useState(false);
+  const [showConcerts, setShowConcerts] = useState(false); // New state for Concerts Page
   const [showAuthModal, setShowAuthModal] = useState(false);
   // Initialize state from localStorage
   const [user, setUser] = useState<string | null>(null);
@@ -551,8 +555,17 @@ function AppContent() {
           <div className="header-actions" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
             <div
               className="nav-link-new"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#94a3b8', fontWeight: 'bold', fontSize: '0.9rem' }}
+              onClick={() => { setShowConcerts(true); setShowStore(false); setSelectedEvent(null); }}
+            >
+              <Globe size={18} />
+              <span>Conciertos</span>
+            </div>
+
+            <div
+              className="nav-link-new"
               style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '20px', border: '1px solid rgba(167, 139, 250, 0.3)' }}
-              onClick={() => { setShowStore(true); setSelectedEvent(null); }}
+              onClick={() => { setShowStore(true); setSelectedEvent(null); setShowConcerts(false); }}
             >
               <img src={coinImage} alt="Etherion" style={{ width: '24px', height: '24px' }} />
               <span style={{ color: '#a78bfa', fontWeight: '600' }}>{formatEtherions(etherionBalance)} Etherions</span>
@@ -589,6 +602,7 @@ function AppContent() {
                       setShowUserMenu(false);
                       setSelectedEvent(null);
                       setShowStore(false);
+                      setShowConcerts(false);
                     }}
                     style={{
                       display: 'flex',
@@ -620,6 +634,7 @@ function AppContent() {
                         setSelectedEvent(null);
                         setShowStore(false);
                         setShowUserPortal(false);
+                        setShowConcerts(false);
                         navigate('/adminpanel');
                       }}
                       style={{
@@ -726,6 +741,8 @@ function AppContent() {
           />
         ) : showStore ? (
           <EtherionStore onBack={() => setShowStore(false)} onBuy={handleBuyEtherions} />
+        ) : showConcerts ? (
+          <ConcertsPage onBack={() => setShowConcerts(false)} />
         ) : selectedEvent ? (
           <section className="section" style={{ paddingTop: '80px', minHeight: '100vh', maxWidth: '100%', padding: '0' }}>
             <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
