@@ -549,6 +549,22 @@ app.get('/api/my-tickets', authenticate, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// --- VPS / Production Static Serving ---
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from the dist directory (Vite build)
+// This enables the server to host the frontend too!
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// SPA Fallback: Any route not handled by API returns index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
